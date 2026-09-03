@@ -10,6 +10,7 @@ class Medicine:
         expiry_date,
         description,
         requires_prescription,
+        image_filename=None,
     ):
         self.id = id
         self.name = name
@@ -20,3 +21,4 @@ class Medicine:
         self.expiry_date = expiry_date
         self.description = description
         self.requires_prescription = bool(requires_prescription)
+        self.image_filename = image_filename

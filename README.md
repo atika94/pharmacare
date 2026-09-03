@@ -18,6 +18,8 @@ The system is designed to manage pharmacy inventory while also providing a custo
 * Order status management
 * Stock management and availability tracking
 * Low-stock and expiry monitoring
+* Medicine image uploads for administrators
+* Admin order inbox
 * Order history for customers
 * Administrative dashboard
 

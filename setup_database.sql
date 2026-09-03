@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS medicines (
     expiry_date            DATE,
     description            TEXT,
     requires_prescription  BOOLEAN        NOT NULL DEFAULT 0,
+    image_filename         VARCHAR(255),
     created_at             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

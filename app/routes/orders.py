@@ -165,13 +165,15 @@ def order_history():
 @orders_bp.route("/orders/<int:order_id>")
 @login_required
 def order_detail(order_id):
+    owner_filter = "" if current_user.is_admin() else " AND user_id = ?"
+    owner_params = (order_id,) if current_user.is_admin() else (order_id, current_user.id)
     order = fetch_one(
-        """
+        f"""
         SELECT id, total_amount, pickup_location, status, created_at
         FROM orders
-        WHERE id = ? AND user_id = ?
+        WHERE id = ?{owner_filter}
         """,
-        (order_id, current_user.id),
+        owner_params,
     )
     if order is None:
         flash("Order not found.", "danger")

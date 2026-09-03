@@ -2,6 +2,7 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from io import BytesIO
 
 from app import create_app
 from werkzeug.security import generate_password_hash
@@ -79,6 +80,40 @@ class AdminManagementTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Stock quantity cannot be negative.", response.data)
+
+    def test_admin_can_upload_medicine_image(self):
+        self.login("admin@example.com")
+        response = self.client.post(
+            "/admin/medicines/new",
+            data={**self.medicine_data(), "image": (BytesIO(b"fake image"), "medicine.png")},
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(response.status_code, 302)
+
+        connection = sqlite3.connect(self.database_file.name)
+        image_filename = connection.execute(
+            "SELECT image_filename FROM medicines WHERE id = 1"
+        ).fetchone()[0]
+        connection.close()
+        self.assertTrue(image_filename.endswith(".png"))
+        image_path = os.path.join("app", "static", "images", "medicines", image_filename)
+        self.assertTrue(os.path.exists(image_path))
+        os.remove(image_path)
+
+    def test_admin_can_see_customer_orders(self):
+        connection = sqlite3.connect(self.database_file.name)
+        connection.execute(
+            "INSERT INTO orders (user_id, total_amount, pickup_location) VALUES (?, ?, ?)",
+            (1, 19.98, "Main Street Pharmacy"),
+        )
+        connection.commit()
+        connection.close()
+
+        self.login("admin@example.com")
+        response = self.client.get("/admin/orders")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"customer@example.com", response.data)
+        self.assertIn(b"Main Street Pharmacy", response.data)
 
 
 if __name__ == "__main__":

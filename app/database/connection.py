@@ -160,9 +160,16 @@ def init_db():
                 expiry_date            DATE,
                 description            TEXT,
                 requires_prescription  BOOLEAN        NOT NULL DEFAULT 0,
+                image_filename         VARCHAR(255),
                 created_at             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        medicine_columns = {
+            row[1] for row in cursor.execute("PRAGMA table_info(medicines)").fetchall()
+        }
+        if "image_filename" not in medicine_columns:
+            cursor.execute("ALTER TABLE medicines ADD COLUMN image_filename VARCHAR(255)")
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS orders (

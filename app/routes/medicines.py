@@ -15,7 +15,7 @@ def list_medicines():
     medicines_data = fetch_all(
         """
         SELECT id, name, category, manufacturer, price, stock_quantity,
-               expiry_date, description, requires_prescription
+               expiry_date, description, requires_prescription, image_filename
         FROM medicines
         WHERE name LIKE ?
            OR category LIKE ?
