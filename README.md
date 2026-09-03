@@ -100,7 +100,6 @@ The optional environment variable below controls the SQLite database file. **Nev
 ### Prerequisites
 
 * Python 3.10+
-* Python 3.10+
 
 ### 1. Clone the Repository
 
@@ -154,8 +153,8 @@ The project is being developed incrementally:
 
 - [x] Phase 1 — Flask application setup
 - [x] Phase 2 — SQLite database integration
-- [ ] Phase 3 — Authentication (customer registration & login)
-- [ ] Phase 4 — Medicine browsing and search
+- [x] Phase 3 — Authentication (customer registration & login)
+- [x] Phase 4 — Medicine browsing and search
 - [ ] Phase 5 — Shopping cart and ordering
 - [ ] Phase 6 — Admin dashboard
 

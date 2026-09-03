@@ -56,6 +56,9 @@ def create_app():
     from app.routes.auth import auth_bp
     app.register_blueprint(auth_bp)
 
+    from app.routes.medicines import medicines_bp
+    app.register_blueprint(medicines_bp)
+
     # ------------------------------------------------------------------
     # Routes
     # ------------------------------------------------------------------

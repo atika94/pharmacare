@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Medicines - PharmaCare{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <h1 class="mb-1">Medicines</h1>
+        <p class="text-muted mb-0">Browse available pharmacy products.</p>
+    </div>
+
+    <form class="d-flex" method="GET" action="{{ url_for('medicines.list_medicines') }}">
+        <label class="visually-hidden" for="medicine-search">Search medicines</label>
+        <input
+            class="form-control me-2"
+            type="search"
+            id="medicine-search"
+            name="q"
+            value="{{ search }}"
+            placeholder="Search medicines"
+        >
+        <button class="btn btn-primary" type="submit">Search</button>
+    </form>
+</div>
+
+{% if medicines %}
+<div class="row g-4">
+    {% for medicine in medicines %}
+    <div class="col-md-6 col-xl-4">
+        <article class="card h-100 shadow-sm">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between gap-2">
+                    <h2 class="h5 card-title">{{ medicine.name }}</h2>
+                    {% if medicine.requires_prescription %}
+                    <span class="badge text-bg-warning">Prescription</span>
+                    {% endif %}
+                </div>
+
+                <p class="text-muted mb-2">
+                    {{ medicine.category or "General medicine" }}
+                    {% if medicine.manufacturer %} · {{ medicine.manufacturer }}{% endif %}
+                </p>
+
+                {% if medicine.description %}
+                <p class="card-text">{{ medicine.description }}</p>
+                {% endif %}
+
+                <div class="mt-auto d-flex justify-content-between align-items-center">
+                    <strong>${{ "%.2f"|format(medicine.price) }}</strong>
+                    {% if medicine.stock_quantity > 0 %}
+                    <span class="text-success">{{ medicine.stock_quantity }} in stock</span>
+                    {% else %}
+                    <span class="text-danger">Out of stock</span>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info" role="status">
+    No medicines matched your search.
+</div>
+{% endif %}
+{% endblock %}
