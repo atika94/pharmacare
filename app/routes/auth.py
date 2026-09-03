@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlite3 import IntegrityError
 
 from app.database.connection import get_connection
 from app.models.user import User
@@ -40,19 +41,19 @@ def register():
             flash("Database connection failed.", "danger")
             return render_template("auth/register.html")
 
-        cursor = connection.cursor(dictionary=True)
+        cursor = connection.cursor()
 
         try:
             # Check if email already exists
             cursor.execute(
-                "SELECT id FROM users WHERE email = %s",
+                "SELECT id FROM users WHERE email = ?",
                 (email,)
             )
 
             existing_user = cursor.fetchone()
 
             if existing_user:
-                flash("An account with this email already exists.", "danger")
+                flash("Email already registered.", "danger")
                 return render_template("auth/register.html")
 
             # Hash password
@@ -62,7 +63,7 @@ def register():
             cursor.execute(
                 """
                 INSERT INTO users (name, email, password, role)
-                VALUES (%s, %s, %s, %s)
+                VALUES (?, ?, ?, ?)
                 """,
                 (name, email, hashed_password, "customer")
             )
@@ -72,6 +73,9 @@ def register():
             flash("Registration successful. You can now log in.", "success")
             return redirect(url_for("auth.login"))
 
+        except IntegrityError:
+            connection.rollback()
+            flash("Email already registered.", "danger")
         except Exception as e:
             connection.rollback()
             print(f"Registration error: {e}")
@@ -102,19 +106,20 @@ def login():
             flash("Database connection failed.", "danger")
             return render_template("auth/login.html")
 
-        cursor = connection.cursor(dictionary=True)
+        cursor = connection.cursor()
 
         try:
             cursor.execute(
                 """
                 SELECT id, name, email, password, role
                 FROM users
-                WHERE email = %s
+                WHERE email = ?
                 """,
                 (email,)
             )
 
-            user_data = cursor.fetchone()
+            user_row = cursor.fetchone()
+            user_data = dict(user_row) if user_row else None
 
             if user_data is None:
                 flash("Invalid email or password.", "danger")
@@ -130,7 +135,6 @@ def login():
                 id=user_data["id"],
                 name=user_data["name"],
                 email=user_data["email"],
-                password=user_data["password"],
                 role=user_data["role"]
             )
 

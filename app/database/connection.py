@@ -1,29 +1,30 @@
 # app/database/connection.py
-# Provides MySQL database connectivity for PharmaCare.
-# Uses mysql-connector-python. No ORM is used.
+# Provides SQLite database connectivity for PharmaCare.
+# Uses Python's built-in sqlite3 module. No ORM is used.
 
 import os
-import mysql.connector
-from mysql.connector import Error
+import sqlite3
+
+
+def _database_path():
+    return os.environ.get("SQLITE_DB_PATH", "pharmacare.db")
+
+
+def _sqlite_query(query):
+    return query.replace("%s", "?")
 
 
 def get_connection():
     """
-    Creates and returns a new MySQL database connection.
-    Reads credentials from environment variables (loaded from .env).
-    Returns None if the connection fails.
+    Creates and returns a new SQLite database connection.
+    The database file is created automatically when it does not exist.
     """
     try:
-        connection = mysql.connector.connect(
-            host=os.environ.get("DB_HOST", "localhost"),
-            port=int(os.environ.get("DB_PORT", 3306)),
-            user=os.environ.get("DB_USER", "root"),
-            password=os.environ.get("DB_PASSWORD", ""),
-            database=os.environ.get("DB_NAME", "pharmacare")
-        )
+        connection = sqlite3.connect(_database_path())
+        connection.row_factory = sqlite3.Row
         return connection
-    except Error as e:
-        print(f"[Database] Error connecting to MySQL: {e}")
+    except sqlite3.Error as e:
+        print(f"[Database] Error opening SQLite database: {e}")
         return None
 
 
@@ -45,10 +46,10 @@ def execute_query(query, params=None):
     cursor = None
     try:
         cursor = connection.cursor()
-        cursor.execute(query, params or ())
+        cursor.execute(_sqlite_query(query), params or ())
         connection.commit()
         return True
-    except Error as e:
+    except sqlite3.Error as e:
         print(f"[Database] Query error: {e}")
         connection.rollback()
         return False
@@ -75,10 +76,11 @@ def fetch_one(query, params=None):
 
     cursor = None
     try:
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute(query, params or ())
-        return cursor.fetchone()
-    except Error as e:
+        cursor = connection.cursor()
+        cursor.execute(_sqlite_query(query), params or ())
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    except sqlite3.Error as e:
         print(f"[Database] Fetch error: {e}")
         return None
     finally:
@@ -104,10 +106,10 @@ def fetch_all(query, params=None):
 
     cursor = None
     try:
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute(query, params or ())
-        return cursor.fetchall()
-    except Error as e:
+        cursor = connection.cursor()
+        cursor.execute(_sqlite_query(query), params or ())
+        return [dict(row) for row in cursor.fetchall()]
+    except sqlite3.Error as e:
         print(f"[Database] Fetch error: {e}")
         return []
     finally:
@@ -135,14 +137,13 @@ def init_db():
         # ------------------------------------------------------------------
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
-                id           INT           NOT NULL AUTO_INCREMENT,
+                id           INTEGER       PRIMARY KEY AUTOINCREMENT,
                 name         VARCHAR(150)  NOT NULL,
                 email        VARCHAR(255)  NOT NULL UNIQUE,
                 password     VARCHAR(255)  NOT NULL,
-                role         ENUM('customer', 'admin') NOT NULL DEFAULT 'customer',
-                created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+                role         VARCHAR(20)   NOT NULL DEFAULT 'customer',
+                created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
         """)
 
         # ------------------------------------------------------------------
@@ -150,7 +151,7 @@ def init_db():
         # ------------------------------------------------------------------
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS medicines (
-                id                     INT            NOT NULL AUTO_INCREMENT,
+                id                     INTEGER        PRIMARY KEY AUTOINCREMENT,
                 name                   VARCHAR(200)   NOT NULL,
                 category               VARCHAR(100),
                 manufacturer           VARCHAR(150),
@@ -158,16 +159,15 @@ def init_db():
                 stock_quantity         INT            NOT NULL DEFAULT 0,
                 expiry_date            DATE,
                 description            TEXT,
-                requires_prescription  BOOLEAN        NOT NULL DEFAULT FALSE,
-                created_at             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+                requires_prescription  BOOLEAN        NOT NULL DEFAULT 0,
+                created_at             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
         """)
 
         connection.commit()
         print("[Database] Tables initialised successfully.")
 
-    except Error as e:
+    except sqlite3.Error as e:
         print(f"[Database] Error initialising tables: {e}")
     finally:
         if cursor:

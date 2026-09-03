@@ -1,29 +1,21 @@
 -- ==========================================================================
--- PharmaCare - MySQL Setup Script
--- Run this in MySQL Workbench or MySQL CLI to prepare the database.
+-- PharmaCare - SQLite Setup Script
+-- Optional: the Flask application creates these tables automatically.
 -- ==========================================================================
 
--- 1. Create the database
-CREATE DATABASE IF NOT EXISTS pharmacare
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
-
-USE pharmacare;
-
--- 2. Create the users table
+-- 1. Create the users table
 CREATE TABLE IF NOT EXISTS users (
-    id           INT           NOT NULL AUTO_INCREMENT,
+    id           INTEGER       PRIMARY KEY AUTOINCREMENT,
     name         VARCHAR(150)  NOT NULL,
     email        VARCHAR(255)  NOT NULL UNIQUE,
     password     VARCHAR(255)  NOT NULL,
-    role         ENUM('customer', 'admin') NOT NULL DEFAULT 'customer',
-    created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    role         VARCHAR(20)   NOT NULL DEFAULT 'customer',
+    created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
--- 3. Create the medicines table
+-- 2. Create the medicines table
 CREATE TABLE IF NOT EXISTS medicines (
-    id                     INT            NOT NULL AUTO_INCREMENT,
+    id                     INTEGER        PRIMARY KEY AUTOINCREMENT,
     name                   VARCHAR(200)   NOT NULL,
     category               VARCHAR(100),
     manufacturer           VARCHAR(150),
@@ -31,12 +23,11 @@ CREATE TABLE IF NOT EXISTS medicines (
     stock_quantity         INT            NOT NULL DEFAULT 0,
     expiry_date            DATE,
     description            TEXT,
-    requires_prescription  BOOLEAN        NOT NULL DEFAULT FALSE,
-    created_at             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    requires_prescription  BOOLEAN        NOT NULL DEFAULT 0,
+    created_at             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
--- 4. Insert one sample medicine for testing
+-- 3. Insert one sample medicine for testing
 INSERT INTO medicines (name, category, manufacturer, price, stock_quantity, expiry_date, description, requires_prescription)
 VALUES (
     'Paracetamol',
@@ -49,7 +40,7 @@ VALUES (
     FALSE
 );
 
--- 5. Verify setup
+-- 4. Verify setup
 SHOW TABLES;
 
 SELECT * FROM medicines;

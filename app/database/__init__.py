@@ -1,2 +1,2 @@
 # app/database/__init__.py
-# This package provides MySQL database connectivity for PharmaCare.
+# This package provides SQLite database connectivity for PharmaCare.

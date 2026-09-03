@@ -2,11 +2,10 @@ from flask_login import UserMixin
 
 
 class User(UserMixin):
-    def __init__(self, id, name, email, password, role):
+    def __init__(self, id, name, email, role):
         self.id = id
         self.name = name
         self.email = email
-        self.password = password
         self.role = role
 
     def is_admin(self):

@@ -28,8 +28,7 @@ The system is designed to manage pharmacy inventory while also providing a custo
 * **HTML5** — Page structure
 * **CSS3** — User interface styling
 * **JavaScript** — Frontend interactions
-* **MySQL** — Relational database
-* **mysql-connector-python** — MySQL driver (no ORM)
+* **SQLite** — Lightweight relational database
 * **python-dotenv** — Environment variable loading
 * **Jinja2** — Server-side HTML templating
 * **Git & GitHub** — Version control
@@ -70,12 +69,12 @@ Complete Order
 
 ## Database
 
-PharmaCare uses **MySQL** as its relational database.
+PharmaCare uses **SQLite** as its relational database. SQLite is included with Python, so no database server installation is required.
 
-The Flask backend communicates with MySQL using:
+The Flask backend communicates with SQLite using Python's built-in `sqlite3` module:
 
 ```
-mysql-connector-python
+sqlite3
 ```
 
 No ORM is being used. All database operations are performed using direct SQL queries with parameterized statements to prevent SQL injection.
@@ -89,24 +88,19 @@ No ORM is being used. All database operations are performed using direct SQL que
 
 ### Environment Variables
 
-The following environment variables must be set before running the application. Copy `.env.example` to `.env` and fill in your actual values. **Never commit `.env` to version control.**
+The optional environment variable below controls the SQLite database file. **Never commit `.env` to version control.**
 
 | Variable      | Description                    | Example         |
 |---------------|--------------------------------|-----------------|
-| `DB_HOST`     | MySQL server hostname          | `localhost`     |
-| `DB_PORT`     | MySQL server port              | `3306`          |
-| `DB_USER`     | MySQL username                 | `root`          |
-| `DB_PASSWORD` | MySQL password                 | *(your password)*|
-| `DB_NAME`     | MySQL database name            | `pharmacare`    |
-| `SECRET_KEY`  | Flask secret key               | *(random string)*|
+| `SQLITE_DB_PATH` | SQLite database file | `pharmacare.db` |
+| `SECRET_KEY`     | Flask secret key     | *(random string)*|
 
 ## Setup & Running
 
 ### Prerequisites
 
 * Python 3.10+
-* MySQL Server installed and running
-* MySQL Workbench (optional, for GUI access)
+* Python 3.10+
 
 ### 1. Clone the Repository
 
@@ -133,24 +127,12 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Create MySQL Database
-
-Open MySQL Workbench or MySQL CLI and run:
-
-```sql
-CREATE DATABASE pharmacare;
-```
-
-### 5. Configure Environment Variables
+### 4. Configure Environment Variables
 
 Create a `.env` file in the project root:
 
 ```
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=pharmacare
+SQLITE_DB_PATH=pharmacare.db
 SECRET_KEY=your_secret_key_here
 ```
 
@@ -162,7 +144,7 @@ python run.py
 
 Flask will start at: `http://127.0.0.1:5000`
 
-The application will automatically create the required database tables on first run.
+The application automatically creates `pharmacare.db` and the required tables on first run.
 
 ## Project Status
 
@@ -171,7 +153,7 @@ The application will automatically create the required database tables on first 
 The project is being developed incrementally:
 
 - [x] Phase 1 — Flask application setup
-- [x] Phase 2 — MySQL database integration
+- [x] Phase 2 — SQLite database integration
 - [ ] Phase 3 — Authentication (customer registration & login)
 - [ ] Phase 4 — Medicine browsing and search
 - [ ] Phase 5 — Shopping cart and ordering
