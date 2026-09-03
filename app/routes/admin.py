@@ -3,7 +3,7 @@ from functools import wraps
 import os
 import uuid
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
@@ -21,7 +21,7 @@ def _save_image(upload):
     if extension not in ALLOWED_IMAGE_EXTENSIONS:
         return None, "Image must be JPG, JPEG, PNG, GIF, or WEBP."
     filename = f"{uuid.uuid4().hex}.{extension}"
-    upload_directory = os.path.join("app", "static", "images", "medicines")
+    upload_directory = os.path.join(current_app.root_path, "static", "images", "medicines")
     os.makedirs(upload_directory, exist_ok=True)
     upload.save(os.path.join(upload_directory, filename))
     return filename, None
@@ -93,6 +93,13 @@ def dashboard():
         ORDER BY expiry_date
         """
     )
+    return render_template(
+        "admin/dashboard.html",
+        medicines=medicines,
+        low_stock=low_stock,
+        expired=expired,
+        now_date=date.today().isoformat(),
+    )
 
 
 @admin_bp.route("/orders")
@@ -109,13 +116,6 @@ def orders():
         """
     )
     return render_template("admin/orders.html", orders=orders_data)
-    return render_template(
-        "admin/dashboard.html",
-        medicines=medicines,
-        low_stock=low_stock,
-        expired=expired,
-        now_date=date.today().isoformat(),
-    )
 
 
 @admin_bp.route("/medicines/new", methods=["GET", "POST"])

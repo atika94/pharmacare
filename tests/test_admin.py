@@ -115,6 +115,14 @@ class AdminManagementTestCase(unittest.TestCase):
         self.assertIn(b"customer@example.com", response.data)
         self.assertIn(b"Main Street Pharmacy", response.data)
 
+    def test_admin_can_add_medicine_to_cart(self):
+        self.login("admin@example.com")
+        self.client.post("/admin/medicines/new", data=self.medicine_data())
+        response = self.client.post("/cart/add/1")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(b"Ibuprofen", self.client.get("/cart").data)
+
 
 if __name__ == "__main__":
     unittest.main()
