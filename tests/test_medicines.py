@@ -41,8 +41,11 @@ class MedicineBrowsingTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Paracetamol", response.data)
         self.assertIn(b"Amoxicillin", response.data)
-        self.assertIn(b"Out of stock", response.data)
-        self.assertIn(b"Prescription", response.data)
+        self.assertNotIn(b"Prescription antibiotic", response.data)
+
+        detail = self.client.get("/medicines/2")
+        self.assertIn(b"Prescription antibiotic", detail.data)
+        self.assertIn(b"Out of stock", detail.data)
 
     def test_search_matches_name_category_and_description(self):
         for query, expected in [

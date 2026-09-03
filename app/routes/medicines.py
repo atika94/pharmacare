@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request
 
-from app.database.connection import fetch_all
+from app.database.connection import fetch_all, fetch_one
 from app.models.medicine import Medicine
 
 
@@ -28,3 +28,21 @@ def list_medicines():
 
     medicines = [Medicine(**medicine) for medicine in medicines_data]
     return render_template("medicines/list.html", medicines=medicines, search=search)
+
+
+@medicines_bp.route("/medicines/<int:medicine_id>")
+def medicine_detail(medicine_id):
+    medicine_data = fetch_one(
+        """
+        SELECT id, name, category, manufacturer, price, stock_quantity,
+               expiry_date, description, requires_prescription, image_filename
+        FROM medicines
+        WHERE id = ?
+        """,
+        (medicine_id,),
+    )
+    if medicine_data is None:
+        from flask import abort
+
+        abort(404)
+    return render_template("medicines/detail.html", medicine=Medicine(**medicine_data))

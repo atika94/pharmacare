@@ -1,10 +1,59 @@
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from datetime import datetime, timedelta
+import os
+import uuid
+
+from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
+from werkzeug.utils import secure_filename
 
 from app.database.connection import get_connection, fetch_all, fetch_one
 
 
 orders_bp = Blueprint("orders", __name__)
+ALLOWED_PRESCRIPTION_EXTENSIONS = {"jpg", "jpeg", "png", "pdf"}
+
+
+def expire_unverified_orders():
+    connection = get_connection()
+    if connection is None:
+        return
+    cursor = connection.cursor()
+    try:
+        cutoff = (datetime.utcnow() - timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute(
+            "SELECT id FROM orders WHERE status = 'pending_verification' AND created_at <= ?",
+            (cutoff,),
+        )
+        order_ids = [row[0] for row in cursor.fetchall()]
+        for order_id in order_ids:
+            cursor.execute(
+                "SELECT medicine_id, quantity FROM order_items WHERE order_id = ?",
+                (order_id,),
+            )
+            for medicine_id, quantity in cursor.fetchall():
+                cursor.execute(
+                    "UPDATE medicines SET stock_quantity = stock_quantity + ? WHERE id = ?",
+                    (quantity, medicine_id),
+                )
+            cursor.execute("UPDATE orders SET status = 'cancelled' WHERE id = ?", (order_id,))
+        connection.commit()
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def _save_prescription(upload):
+    if not upload or not upload.filename:
+        return None, "A prescription file is required for prescription medicines."
+    safe_name = secure_filename(upload.filename)
+    extension = safe_name.rsplit(".", 1)[-1].lower() if "." in safe_name else ""
+    if extension not in ALLOWED_PRESCRIPTION_EXTENSIONS:
+        return None, "Prescription must be a PDF, JPG, JPEG, or PNG file."
+    filename = f"{uuid.uuid4().hex}.{extension}"
+    upload_directory = os.path.join(current_app.instance_path, "prescriptions")
+    os.makedirs(upload_directory, exist_ok=True)
+    upload.save(os.path.join(upload_directory, filename))
+    return filename, None
 
 
 def _cart_items():
@@ -16,7 +65,7 @@ def _cart_items():
     placeholders = ", ".join("?" for _ in ids)
     medicines = fetch_all(
         f"""
-        SELECT id, name, price, stock_quantity
+        SELECT id, name, price, stock_quantity, requires_prescription
         FROM medicines
         WHERE id IN ({placeholders})
         ORDER BY name COLLATE NOCASE
@@ -91,6 +140,7 @@ def update_cart():
 @orders_bp.route("/checkout", methods=["GET", "POST"])
 @login_required
 def checkout():
+    expire_unverified_orders()
     items, total = _cart_items()
     if not items:
         flash("Your cart is empty.", "info")
@@ -111,12 +161,28 @@ def checkout():
                     flash(f"Not enough stock for {item['medicine']['name']}.", "danger")
                     return redirect(url_for("orders.cart"))
 
+            requires_prescription = any(item["medicine"]["requires_prescription"] for item in items)
+            prescription_filename = None
+            if requires_prescription:
+                prescription_filename, prescription_error = _save_prescription(request.files.get("prescription"))
+                if prescription_error:
+                    connection.rollback()
+                    flash(prescription_error, "danger")
+                    return render_template("orders/checkout.html", items=items, total=total)
+            pickup_location = request.form.get("pickup_location", "").strip()
+            if not pickup_location:
+                connection.rollback()
+                flash("Pickup location is required.", "danger")
+                return render_template("orders/checkout.html", items=items, total=total)
+
+            status = "pending_verification" if requires_prescription else "pending"
             cursor.execute(
                 """
-                INSERT INTO orders (user_id, total_amount, pickup_location, status)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO orders
+                    (user_id, total_amount, pickup_location, status, prescription_filename)
+                VALUES (?, ?, ?, ?, ?)
                 """,
-                (current_user.id, total, request.form.get("pickup_location", "").strip(), "pending"),
+                (current_user.id, total, pickup_location, status, prescription_filename),
             )
             order_id = cursor.lastrowid
             for item in items:
@@ -150,6 +216,7 @@ def checkout():
 @orders_bp.route("/orders")
 @login_required
 def order_history():
+    expire_unverified_orders()
     orders = fetch_all(
         """
         SELECT id, total_amount, pickup_location, status, created_at
@@ -165,6 +232,7 @@ def order_history():
 @orders_bp.route("/orders/<int:order_id>")
 @login_required
 def order_detail(order_id):
+    expire_unverified_orders()
     owner_filter = "" if current_user.is_admin() else " AND user_id = ?"
     owner_params = (order_id,) if current_user.is_admin() else (order_id, current_user.id)
     order = fetch_one(

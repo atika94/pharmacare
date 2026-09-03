@@ -20,6 +20,7 @@ The system is designed to manage pharmacy inventory while also providing a custo
 * Low-stock and expiry monitoring
 * Medicine image uploads for administrators
 * Admin order inbox
+* Prescription upload and admin verification for prescription medicines
 * Order history for customers
 * Administrative dashboard
 
@@ -161,6 +162,8 @@ The project is being developed incrementally:
 - [x] Phase 4 — Medicine browsing and search
 - [x] Phase 5 — Shopping cart and ordering
 - [x] Phase 6 — Admin dashboard and medicine management
+
+Prescription medicines require a PDF or image upload during checkout. The order remains `Pending verification` until an administrator reviews the prescription. Unverified prescription orders are cancelled after 30 minutes and reserved stock is restored.
 
 ## Author
 

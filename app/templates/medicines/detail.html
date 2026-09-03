@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}{{ medicine.name }} - PharmaCare{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-5">
+        {% if medicine.image_filename %}
+        <img class="img-fluid rounded" src="{{ url_for('static', filename='images/medicines/' ~ medicine.image_filename) }}" alt="{{ medicine.name }}">
+        {% else %}
+        <div class="bg-light rounded d-flex align-items-center justify-content-center" style="min-height: 280px;">No image available</div>
+        {% endif %}
+    </div>
+    <div class="col-md-7">
+        <h1>{{ medicine.name }}</h1>
+        <p class="text-muted">{{ medicine.category or "General medicine" }}{% if medicine.manufacturer %} · {{ medicine.manufacturer }}{% endif %}</p>
+        <p>{{ medicine.description or "No description available." }}</p>
+        <dl class="row">
+            <dt class="col-sm-4">Price</dt><dd class="col-sm-8">${{ "%.2f"|format(medicine.price) }}</dd>
+            <dt class="col-sm-4">Stock</dt><dd class="col-sm-8">{{ medicine.stock_quantity }}</dd>
+            <dt class="col-sm-4">Expiry</dt><dd class="col-sm-8">{{ medicine.expiry_date or "Not specified" }}</dd>
+            <dt class="col-sm-4">Prescription</dt><dd class="col-sm-8">{{ "Required" if medicine.requires_prescription else "Not required" }}</dd>
+        </dl>
+        {% if current_user.is_authenticated and medicine.stock_quantity > 0 %}
+        <form method="POST" action="{{ url_for('orders.add_to_cart', medicine_id=medicine.id) }}">
+            <button class="btn btn-primary" type="submit">Add to cart</button>
+        </form>
+        {% elif medicine.stock_quantity == 0 %}
+        <span class="text-danger">Out of stock</span>
+        {% else %}
+        <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Log in to order</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -178,6 +178,8 @@ def init_db():
                 total_amount    DECIMAL(10, 2) NOT NULL,
                 pickup_location VARCHAR(200)  NOT NULL,
                 status          VARCHAR(30)   NOT NULL DEFAULT 'pending',
+                prescription_filename VARCHAR(255),
+                prescription_verified BOOLEAN NOT NULL DEFAULT 0,
                 created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
@@ -194,6 +196,14 @@ def init_db():
                 FOREIGN KEY (medicine_id) REFERENCES medicines (id)
             )
         """)
+
+        order_columns = {
+            row[1] for row in cursor.execute("PRAGMA table_info(orders)").fetchall()
+        }
+        if "prescription_filename" not in order_columns:
+            cursor.execute("ALTER TABLE orders ADD COLUMN prescription_filename VARCHAR(255)")
+        if "prescription_verified" not in order_columns:
+            cursor.execute("ALTER TABLE orders ADD COLUMN prescription_verified BOOLEAN NOT NULL DEFAULT 0")
 
         connection.commit()
         print("[Database] Tables initialised successfully.")

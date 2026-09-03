@@ -4,7 +4,7 @@
 
 {% block content %}
 <h1 class="mb-4">Checkout</h1>
-<form method="POST" class="row g-4">
+<form method="POST" enctype="multipart/form-data" class="row g-4">
     <div class="col-md-7">
         <label class="form-label" for="pickup_location">Store pickup location</label>
         <input class="form-control" id="pickup_location" name="pickup_location" required maxlength="200" placeholder="Main Street Pharmacy">
@@ -21,5 +21,12 @@
             <button class="btn btn-primary w-100 mt-3" type="submit">Place order</button>
         </div>
     </div>
+    {% if items|selectattr('medicine.requires_prescription')|list %}
+    <div class="col-12">
+        <label class="form-label" for="prescription">Prescription</label>
+        <input class="form-control" id="prescription" name="prescription" type="file" accept=".pdf,.jpg,.jpeg,.png" required>
+        <div class="form-text">Upload a valid prescription. The order remains pending until an admin verifies it.</div>
+    </div>
+    {% endif %}
 </form>
 {% endblock %}

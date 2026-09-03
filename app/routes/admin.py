@@ -3,11 +3,12 @@ from functools import wraps
 import os
 import uuid
 
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, send_from_directory, url_for
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app.database.connection import execute_query, fetch_all, fetch_one
+from app.routes.orders import expire_unverified_orders
 
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -105,10 +106,12 @@ def dashboard():
 @admin_bp.route("/orders")
 @admin_required
 def orders():
+    expire_unverified_orders()
     orders_data = fetch_all(
         """
         SELECT orders.id, orders.total_amount, orders.pickup_location,
-               orders.status, orders.created_at, users.name AS customer_name,
+               orders.status, orders.created_at, orders.prescription_filename,
+               orders.prescription_verified, users.name AS customer_name,
                users.email AS customer_email
         FROM orders
         JOIN users ON users.id = orders.user_id
@@ -116,6 +119,39 @@ def orders():
         """
     )
     return render_template("admin/orders.html", orders=orders_data)
+
+
+@admin_bp.post("/orders/<int:order_id>/verify")
+@admin_required
+def verify_prescription(order_id):
+    order = fetch_one(
+        "SELECT status FROM orders WHERE id = ? AND prescription_filename IS NOT NULL",
+        (order_id,),
+    )
+    if order is None:
+        abort(404)
+    if order["status"] == "pending_verification":
+        if execute_query(
+            "UPDATE orders SET status = 'verified', prescription_verified = 1 WHERE id = ?",
+            (order_id,),
+        ):
+            flash("Prescription verified. Order approved.", "success")
+    return redirect(url_for("admin.orders"))
+
+
+@admin_bp.get("/orders/<int:order_id>/prescription")
+@admin_required
+def prescription(order_id):
+    order = fetch_one(
+        "SELECT prescription_filename FROM orders WHERE id = ?",
+        (order_id,),
+    )
+    if order is None or not order["prescription_filename"]:
+        abort(404)
+    return send_from_directory(
+        os.path.join(current_app.instance_path, "prescriptions"),
+        order["prescription_filename"],
+    )
 
 
 @admin_bp.route("/medicines/new", methods=["GET", "POST"])

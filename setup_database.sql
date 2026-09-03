@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS orders (
     total_amount    DECIMAL(10, 2) NOT NULL,
     pickup_location VARCHAR(200)  NOT NULL,
     status          VARCHAR(30)   NOT NULL DEFAULT 'pending',
+    prescription_filename VARCHAR(255),
+    prescription_verified BOOLEAN NOT NULL DEFAULT 0,
     created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id)
 );

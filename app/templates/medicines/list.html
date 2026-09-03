@@ -27,36 +27,18 @@
 <div class="row g-4">
     {% for medicine in medicines %}
     <div class="col-md-6 col-xl-4">
-        <article class="card h-100 shadow-sm">
-            <div class="card-body d-flex flex-column">
+        <article class="card h-100 shadow-sm" style="height: 360px !important;">
+            <a class="text-decoration-none text-dark" href="{{ url_for('medicines.medicine_detail', medicine_id=medicine.id) }}">
                 {% if medicine.image_filename %}
-                <img class="card-img-top mb-3 rounded" src="{{ url_for('static', filename='images/medicines/' ~ medicine.image_filename) }}" alt="{{ medicine.name }}" style="height: 180px; object-fit: cover;">
+                <img class="card-img-top rounded" src="{{ url_for('static', filename='images/medicines/' ~ medicine.image_filename) }}" alt="{{ medicine.name }}" style="height: 220px; object-fit: cover;">
                 {% endif %}
-                <div class="d-flex justify-content-between gap-2">
-                    <h2 class="h5 card-title">{{ medicine.name }}</h2>
-                    {% if medicine.requires_prescription %}
-                    <span class="badge text-bg-warning">Prescription</span>
-                    {% endif %}
-                </div>
-
-                <p class="text-muted mb-2">
-                    {{ medicine.category or "General medicine" }}
-                    {% if medicine.manufacturer %} · {{ medicine.manufacturer }}{% endif %}
-                </p>
-
-                {% if medicine.description %}
-                <p class="card-text">{{ medicine.description }}</p>
-                {% endif %}
-
-                <div class="mt-auto d-flex justify-content-between align-items-center">
+                <div class="card-body">
+                    <h2 class="h5 card-title text-truncate">{{ medicine.name }}</h2>
                     <strong>${{ "%.2f"|format(medicine.price) }}</strong>
-                    {% if medicine.stock_quantity > 0 %}
-                    <span class="text-success">{{ medicine.stock_quantity }} in stock</span>
-                    {% else %}
-                    <span class="text-danger">Out of stock</span>
-                    {% endif %}
                 </div>
+            </a>
 
+            <div class="card-body pt-0">
                 {% if current_user.is_authenticated and medicine.stock_quantity > 0 %}
                 <form class="mt-3" method="POST" action="{{ url_for('orders.add_to_cart', medicine_id=medicine.id) }}">
                     <button class="btn btn-outline-primary w-100" type="submit">Add to cart</button>
