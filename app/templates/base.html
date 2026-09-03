@@ -40,6 +40,12 @@
                     Orders
                 </a>
 
+                    {% if current_user.is_admin() %}
+                    <a class="nav-link text-white"
+                       href="{{ url_for('admin.dashboard') }}">
+                        Admin
+                    </a>
+                    {% endif %}
                 <span class="navbar-text text-white me-3">
                     Welcome, {{ current_user.name }}
                 </span>

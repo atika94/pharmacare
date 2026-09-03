@@ -156,7 +156,7 @@ The project is being developed incrementally:
 - [x] Phase 3 — Authentication (customer registration & login)
 - [x] Phase 4 — Medicine browsing and search
 - [x] Phase 5 — Shopping cart and ordering
-- [ ] Phase 6 — Admin dashboard
+- [x] Phase 6 — Admin dashboard and medicine management
 
 ## Author
 

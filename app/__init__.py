@@ -62,6 +62,8 @@ def create_app():
     from app.routes.orders import orders_bp
     app.register_blueprint(orders_bp)
 
+    from app.routes.admin import admin_bp
+    app.register_blueprint(admin_bp)
     # ------------------------------------------------------------------
     # Routes
     # ------------------------------------------------------------------

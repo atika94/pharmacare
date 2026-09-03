@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}{{ heading }} - PharmaCare{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="mb-4">{{ heading }}</h1>
+        <form method="POST" class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label" for="name">Name</label>
+                <input class="form-control" id="name" name="name" value="{{ medicine.get('name', '') }}" required maxlength="200">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="category">Category</label>
+                <input class="form-control" id="category" name="category" value="{{ medicine.get('category', '') or '' }}" maxlength="100">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="manufacturer">Manufacturer</label>
+                <input class="form-control" id="manufacturer" name="manufacturer" value="{{ medicine.get('manufacturer', '') or '' }}" maxlength="150">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="price">Price</label>
+                <input class="form-control" id="price" name="price" type="number" min="0" step="0.01" value="{{ medicine.get('price', '') }}" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="stock_quantity">Stock</label>
+                <input class="form-control" id="stock_quantity" name="stock_quantity" type="number" min="0" value="{{ medicine.get('stock_quantity', '') }}" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="expiry_date">Expiry date</label>
+                <input class="form-control" id="expiry_date" name="expiry_date" type="date" value="{{ medicine.get('expiry_date', '') or '' }}">
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" id="requires_prescription" name="requires_prescription" type="checkbox" {% if medicine.get('requires_prescription') %}checked{% endif %}>
+                    <label class="form-check-label" for="requires_prescription">Requires prescription</label>
+                </div>
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="description">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="4">{{ medicine.get('description', '') or '' }}</textarea>
+            </div>
+            <div class="col-12">
+                <button class="btn btn-primary" type="submit">Save medicine</button>
+                <a class="btn btn-outline-secondary" href="{{ url_for('admin.dashboard') }}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
