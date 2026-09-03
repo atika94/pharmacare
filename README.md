@@ -145,6 +145,8 @@ Flask will start at: `http://127.0.0.1:5000`
 
 The application automatically creates `pharmacare.db` and the required tables on first run.
 
+To create the development administrator, register with the email `www.admin.com` and a strong password. The password is still required for every login; the email alone never signs anyone in. Other registrations remain customer accounts.
+
 ## Project Status
 
 **Currently in development**

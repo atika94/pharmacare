@@ -80,6 +80,25 @@ class AuthenticationTestCase(unittest.TestCase):
         self.assertIn(b"Login", response.data)
         self.assertIn(b"Register", response.data)
 
+    def test_designated_admin_email_gets_admin_role(self):
+        response = self.register(email="WWW.ADMIN.COM")
+        self.assertEqual(response.status_code, 302)
+
+        connection = sqlite3.connect(self.database_file.name)
+        role = connection.execute(
+            "SELECT role FROM users WHERE email = ?", ("www.admin.com",)
+        ).fetchone()[0]
+        connection.close()
+
+        self.assertEqual(role, "admin")
+
+        response = self.client.post(
+            "/login",
+            data={"email": "www.admin.com", "password": "TestPassword123"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin", response.location)
+
 
 if __name__ == "__main__":
     unittest.main()

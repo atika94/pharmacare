@@ -8,6 +8,7 @@ from app.models.user import User
 
 
 auth_bp = Blueprint("auth", __name__)
+ADMIN_EMAIL = "www.admin.com"
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
@@ -59,13 +60,14 @@ def register():
             # Hash password
             hashed_password = generate_password_hash(password)
 
-            # Create customer account
+            role = "admin" if email == ADMIN_EMAIL else "customer"
+
             cursor.execute(
                 """
                 INSERT INTO users (name, email, password, role)
                 VALUES (?, ?, ?, ?)
                 """,
-                (name, email, hashed_password, "customer")
+                (name, email, hashed_password, role)
             )
 
             connection.commit()
@@ -142,7 +144,8 @@ def login():
 
             flash("Login successful.", "success")
 
-            return redirect(url_for("home"))
+            destination = "admin.dashboard" if user.is_admin() else "home"
+            return redirect(url_for(destination))
 
         except Exception as e:
             print(f"Login error: {e}")
