@@ -59,6 +59,9 @@ def create_app():
     from app.routes.medicines import medicines_bp
     app.register_blueprint(medicines_bp)
 
+    from app.routes.orders import orders_bp
+    app.register_blueprint(orders_bp)
+
     # ------------------------------------------------------------------
     # Routes
     # ------------------------------------------------------------------

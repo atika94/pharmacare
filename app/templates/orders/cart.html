@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Cart - PharmaCare{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Your Cart</h1>
+{% if items %}
+<form method="POST" action="{{ url_for('orders.update_cart') }}">
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Medicine</th><th>Price</th><th style="width: 140px;">Quantity</th><th>Total</th></tr></thead>
+            <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.medicine.name }}</td>
+                <td>${{ "%.2f"|format(item.medicine.price) }}</td>
+                <td><input class="form-control" type="number" min="0" max="{{ item.medicine.stock_quantity }}" name="{{ item.medicine.id }}" value="{{ item.quantity }}"></td>
+                <td>${{ "%.2f"|format(item.subtotal) }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <strong class="fs-5">Total: ${{ "%.2f"|format(total) }}</strong>
+        <div>
+            <button class="btn btn-outline-secondary me-2" type="submit">Update cart</button>
+            <a class="btn btn-primary" href="{{ url_for('orders.checkout') }}">Checkout</a>
+        </div>
+    </div>
+</form>
+{% else %}
+<div class="alert alert-info">Your cart is empty. <a href="{{ url_for('medicines.list_medicines') }}">Browse medicines</a>.</div>
+{% endif %}
+{% endblock %}

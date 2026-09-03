@@ -155,7 +155,7 @@ The project is being developed incrementally:
 - [x] Phase 2 — SQLite database integration
 - [x] Phase 3 — Authentication (customer registration & login)
 - [x] Phase 4 — Medicine browsing and search
-- [ ] Phase 5 — Shopping cart and ordering
+- [x] Phase 5 — Shopping cart and ordering
 - [ ] Phase 6 — Admin dashboard
 
 ## Author

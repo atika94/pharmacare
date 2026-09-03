@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Orders - PharmaCare{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Your Orders</h1>
+{% if orders %}
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead><tr><th>Order</th><th>Pickup location</th><th>Status</th><th>Total</th><th></th></tr></thead>
+        <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>#{{ order.id }}<br><small class="text-muted">{{ order.created_at }}</small></td>
+            <td>{{ order.pickup_location }}</td>
+            <td><span class="badge text-bg-secondary">{{ order.status|capitalize }}</span></td>
+            <td>${{ "%.2f"|format(order.total_amount) }}</td>
+            <td><a href="{{ url_for('orders.order_detail', order_id=order.id) }}">View</a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">You have not placed any orders yet.</div>
+{% endif %}
+{% endblock %}

@@ -53,6 +53,12 @@
                     <span class="text-danger">Out of stock</span>
                     {% endif %}
                 </div>
+
+                {% if current_user.is_authenticated and medicine.stock_quantity > 0 %}
+                <form class="mt-3" method="POST" action="{{ url_for('orders.add_to_cart', medicine_id=medicine.id) }}">
+                    <button class="btn btn-outline-primary w-100" type="submit">Add to cart</button>
+                </form>
+                {% endif %}
             </div>
         </article>
     </div>

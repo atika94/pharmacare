@@ -30,6 +30,16 @@
                     Medicines
                 </a>
 
+                <a class="nav-link text-white"
+                   href="{{ url_for('orders.cart') }}">
+                    Cart
+                </a>
+
+                <a class="nav-link text-white"
+                   href="{{ url_for('orders.order_history') }}">
+                    Orders
+                </a>
+
                 <span class="navbar-text text-white me-3">
                     Welcome, {{ current_user.name }}
                 </span>

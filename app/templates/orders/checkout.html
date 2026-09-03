@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - PharmaCare{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Checkout</h1>
+<form method="POST" class="row g-4">
+    <div class="col-md-7">
+        <label class="form-label" for="pickup_location">Store pickup location</label>
+        <input class="form-control" id="pickup_location" name="pickup_location" required maxlength="200" placeholder="Main Street Pharmacy">
+        <div class="form-text">Your order will be prepared for pickup at this location.</div>
+    </div>
+    <div class="col-md-5">
+        <div class="border rounded p-3">
+            <h2 class="h5">Order summary</h2>
+            {% for item in items %}
+            <div class="d-flex justify-content-between"><span>{{ item.medicine.name }} × {{ item.quantity }}</span><span>${{ "%.2f"|format(item.subtotal) }}</span></div>
+            {% endfor %}
+            <hr>
+            <div class="d-flex justify-content-between"><strong>Total</strong><strong>${{ "%.2f"|format(total) }}</strong></div>
+            <button class="btn btn-primary w-100 mt-3" type="submit">Place order</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

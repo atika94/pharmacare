@@ -27,7 +27,28 @@ CREATE TABLE IF NOT EXISTS medicines (
     created_at             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Insert one sample medicine for testing
+-- 3. Create orders and order line items
+CREATE TABLE IF NOT EXISTS orders (
+    id              INTEGER       PRIMARY KEY AUTOINCREMENT,
+    user_id         INTEGER       NOT NULL,
+    total_amount    DECIMAL(10, 2) NOT NULL,
+    pickup_location VARCHAR(200)  NOT NULL,
+    status          VARCHAR(30)   NOT NULL DEFAULT 'pending',
+    created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+    id          INTEGER       PRIMARY KEY AUTOINCREMENT,
+    order_id    INTEGER       NOT NULL,
+    medicine_id INTEGER       NOT NULL,
+    quantity    INTEGER       NOT NULL CHECK (quantity > 0),
+    unit_price  DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders (id),
+    FOREIGN KEY (medicine_id) REFERENCES medicines (id)
+);
+
+-- 4. Insert one sample medicine for testing
 INSERT INTO medicines (name, category, manufacturer, price, stock_quantity, expiry_date, description, requires_prescription)
 VALUES (
     'Paracetamol',
@@ -40,7 +61,7 @@ VALUES (
     FALSE
 );
 
--- 4. Verify setup
-SHOW TABLES;
+-- 5. Verify setup
+SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name;
 
 SELECT * FROM medicines;

@@ -164,6 +164,30 @@ def init_db():
             )
         """)
 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS orders (
+                id              INTEGER       PRIMARY KEY AUTOINCREMENT,
+                user_id         INTEGER       NOT NULL,
+                total_amount    DECIMAL(10, 2) NOT NULL,
+                pickup_location VARCHAR(200)  NOT NULL,
+                status          VARCHAR(30)   NOT NULL DEFAULT 'pending',
+                created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS order_items (
+                id          INTEGER       PRIMARY KEY AUTOINCREMENT,
+                order_id    INTEGER       NOT NULL,
+                medicine_id INTEGER       NOT NULL,
+                quantity    INTEGER       NOT NULL CHECK (quantity > 0),
+                unit_price  DECIMAL(10, 2) NOT NULL,
+                FOREIGN KEY (order_id) REFERENCES orders (id),
+                FOREIGN KEY (medicine_id) REFERENCES medicines (id)
+            )
+        """)
+
         connection.commit()
         print("[Database] Tables initialised successfully.")
 
