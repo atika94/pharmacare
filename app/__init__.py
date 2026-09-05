@@ -71,8 +71,19 @@ def create_app():
     @app.route("/")
     def home():
         from flask import render_template
+        from app.database.connection import fetch_all
 
-        return render_template("home.html")
+        featured_medicines = fetch_all(
+            """
+            SELECT id, name, category, price, stock_quantity, image_filename
+            FROM medicines
+            WHERE stock_quantity > 0
+            ORDER BY name COLLATE NOCASE
+            LIMIT 6
+            """
+        )
+
+        return render_template("home.html", featured_medicines=featured_medicines)
 
     @app.route("/db-status")
     def db_status():

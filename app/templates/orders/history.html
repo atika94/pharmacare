@@ -14,7 +14,7 @@
             <td>#{{ order.id }}<br><small class="text-muted">{{ order.created_at }}</small></td>
             <td>{{ order.pickup_location }}</td>
             <td><span class="badge text-bg-secondary">{{ order.status|capitalize }}</span></td>
-            <td>${{ "%.2f"|format(order.total_amount) }}</td>
+            <td>PKR {{ "%.2f"|format(order.total_amount) }}</td>
             <td><a href="{{ url_for('orders.order_detail', order_id=order.id) }}">View</a></td>
         </tr>
         {% endfor %}

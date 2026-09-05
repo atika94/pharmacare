@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import os
+import re
 import uuid
 
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
@@ -11,6 +12,7 @@ from app.database.connection import get_connection, fetch_all, fetch_one
 
 orders_bp = Blueprint("orders", __name__)
 ALLOWED_PRESCRIPTION_EXTENSIONS = {"jpg", "jpeg", "png", "pdf"}
+HOME_DELIVERY_FEE = 50.0
 
 
 def expire_unverified_orders():
@@ -85,6 +87,11 @@ def _cart_items():
     return items, total
 
 
+def _checkout_totals(subtotal, fulfillment_method):
+    delivery_fee = HOME_DELIVERY_FEE if fulfillment_method == "delivery" else 0.0
+    return delivery_fee, subtotal + delivery_fee
+
+
 @orders_bp.route("/cart")
 def cart():
     items, total = _cart_items()
@@ -141,12 +148,15 @@ def update_cart():
 @login_required
 def checkout():
     expire_unverified_orders()
-    items, total = _cart_items()
+    items, subtotal = _cart_items()
     if not items:
         flash("Your cart is empty.", "info")
         return redirect(url_for("orders.cart"))
 
     if request.method == "POST":
+        pickup_location = request.form.get("pickup_location", "").strip()
+        fulfillment_method = request.form.get("fulfillment_method") or ("pickup" if pickup_location else "delivery")
+        delivery_fee, total = _checkout_totals(subtotal, fulfillment_method)
         connection = get_connection()
         try:
             cursor = connection.cursor()
@@ -168,21 +178,47 @@ def checkout():
                 if prescription_error:
                     connection.rollback()
                     flash(prescription_error, "danger")
-                    return render_template("orders/checkout.html", items=items, total=total)
-            pickup_location = request.form.get("pickup_location", "").strip()
-            if not pickup_location:
+                    return render_template("orders/checkout.html", items=items, subtotal=subtotal, delivery_fee=delivery_fee, total=total)
+
+            delivery_address = request.form.get("delivery_address", "").strip()
+            delivery_city = request.form.get("delivery_city", "").strip()
+            postal_code = request.form.get("postal_code", "").strip()
+            contact_email = request.form.get("contact_email", "").strip().lower() or current_user.email
+            if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", contact_email):
+                connection.rollback()
+                flash("Please enter a valid email address for your order confirmation.", "danger")
+                return render_template("orders/checkout.html", items=items, subtotal=subtotal, delivery_fee=delivery_fee, total=total, contact_email=contact_email)
+            if fulfillment_method == "delivery":
+                if len(delivery_address) < 10:
+                    connection.rollback()
+                    flash("Please enter a complete delivery address.", "danger")
+                    return render_template("orders/checkout.html", items=items, subtotal=subtotal, delivery_fee=delivery_fee, total=total)
+                if not delivery_city:
+                    connection.rollback()
+                    flash("City is required for delivery.", "danger")
+                    return render_template("orders/checkout.html", items=items, subtotal=subtotal, delivery_fee=delivery_fee, total=total)
+                if not re.fullmatch(r"\d{5}", postal_code):
+                    connection.rollback()
+                    flash("Please enter a valid 5-digit Pakistan postal code.", "danger")
+                    return render_template("orders/checkout.html", items=items, subtotal=subtotal, delivery_fee=delivery_fee, total=total)
+                pickup_location = "Home delivery"
+            elif not pickup_location:
                 connection.rollback()
                 flash("Pickup location is required.", "danger")
-                return render_template("orders/checkout.html", items=items, total=total)
+                return render_template("orders/checkout.html", items=items, subtotal=subtotal, delivery_fee=delivery_fee, total=total)
 
             status = "pending_verification" if requires_prescription else "pending"
             cursor.execute(
                 """
                 INSERT INTO orders
-                    (user_id, total_amount, pickup_location, status, prescription_filename)
-                VALUES (?, ?, ?, ?, ?)
+                    (user_id, total_amount, pickup_location, delivery_address,
+                     delivery_city, postal_code, delivery_fee, contact_email,
+                     status, prescription_filename)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (current_user.id, total, pickup_location, status, prescription_filename),
+                (current_user.id, total, pickup_location, delivery_address or None,
+                  delivery_city or None, postal_code or None, delivery_fee,
+                  contact_email, status, prescription_filename),
             )
             order_id = cursor.lastrowid
             for item in items:
@@ -201,7 +237,7 @@ def checkout():
             connection.commit()
             session.pop("cart", None)
             flash("Order placed successfully.", "success")
-            return redirect(url_for("orders.order_detail", order_id=order_id))
+            return redirect(url_for("orders.order_confirmation", order_id=order_id))
         except Exception as error:
             connection.rollback()
             print(f"Order error: {error}")
@@ -210,7 +246,8 @@ def checkout():
             cursor.close()
             connection.close()
 
-    return render_template("orders/checkout.html", items=items, total=total)
+    delivery_fee, total = _checkout_totals(subtotal, "delivery")
+    return render_template("orders/checkout.html", items=items, subtotal=subtotal, delivery_fee=delivery_fee, total=total, contact_email=current_user.email)
 
 
 @orders_bp.route("/orders")
@@ -219,7 +256,8 @@ def order_history():
     expire_unverified_orders()
     orders = fetch_all(
         """
-        SELECT id, total_amount, pickup_location, status, created_at
+         SELECT id, total_amount, pickup_location, delivery_address, delivery_city,
+             postal_code, delivery_fee, contact_email, status, created_at
         FROM orders
         WHERE user_id = ?
         ORDER BY created_at DESC, id DESC
@@ -237,7 +275,8 @@ def order_detail(order_id):
     owner_params = (order_id,) if current_user.is_admin() else (order_id, current_user.id)
     order = fetch_one(
         f"""
-        SELECT id, total_amount, pickup_location, status, created_at
+         SELECT id, total_amount, pickup_location, delivery_address, delivery_city,
+             postal_code, delivery_fee, contact_email, status, created_at
         FROM orders
         WHERE id = ?{owner_filter}
         """,
@@ -259,3 +298,50 @@ def order_detail(order_id):
         (order_id,),
     )
     return render_template("orders/detail.html", order=order, items=items)
+
+
+@orders_bp.route("/orders/<int:order_id>/confirmation")
+@login_required
+def order_confirmation(order_id):
+    owner_filter = "" if current_user.is_admin() else " AND user_id = ?"
+    owner_params = (order_id,) if current_user.is_admin() else (order_id, current_user.id)
+    order = fetch_one(
+        f"""
+        SELECT id, total_amount, pickup_location, delivery_address, delivery_city,
+               postal_code, delivery_fee, contact_email, status, created_at
+        FROM orders WHERE id = ?{owner_filter}
+        """,
+        owner_params,
+    )
+    if order is None:
+        flash("Order not found.", "danger")
+        return redirect(url_for("orders.order_history"))
+    return render_template("orders/confirmation.html", order=order)
+
+
+@orders_bp.route("/orders/<int:order_id>/invoice")
+@login_required
+def invoice(order_id):
+    owner_filter = "" if current_user.is_admin() else " AND user_id = ?"
+    owner_params = (order_id,) if current_user.is_admin() else (order_id, current_user.id)
+    order = fetch_one(
+        f"""
+         SELECT id, total_amount, pickup_location, delivery_address, delivery_city,
+             postal_code, delivery_fee, contact_email, status, created_at
+        FROM orders WHERE id = ?{owner_filter}
+        """,
+        owner_params,
+    )
+    if order is None:
+        flash("Order not found.", "danger")
+        return redirect(url_for("orders.order_history"))
+    items = fetch_all(
+        """
+        SELECT medicines.name, order_items.quantity, order_items.unit_price,
+               order_items.quantity * order_items.unit_price AS subtotal
+        FROM order_items JOIN medicines ON medicines.id = order_items.medicine_id
+        WHERE order_items.order_id = ? ORDER BY medicines.name COLLATE NOCASE
+        """,
+        (order_id,),
+    )
+    return render_template("orders/invoice.html", order=order, items=items)

@@ -77,6 +77,51 @@ class OrderFlowTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/cart", response.location)
 
+    def test_home_delivery_adds_fee_and_generates_invoice(self):
+        self.login()
+        self.client.post("/cart/add/1")
+        response = self.client.post(
+            "/checkout",
+            data={
+                "fulfillment_method": "delivery",
+                "delivery_address": "House 10, Main Street",
+                "delivery_city": "Lahore",
+                "postal_code": "54000",
+                "contact_email": "orders@example.com",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/orders/1", response.location)
+        connection = sqlite3.connect(self.database_file.name)
+        order = connection.execute(
+            "SELECT total_amount, delivery_address, delivery_city, postal_code, delivery_fee, contact_email FROM orders"
+        ).fetchone()
+        connection.close()
+        self.assertEqual(order, (62.5, "House 10, Main Street", "Lahore", "54000", 50, "orders@example.com"))
+
+        invoice = self.client.get("/orders/1/invoice")
+        self.assertEqual(invoice.status_code, 200)
+        self.assertIn(b"Invoice #1", invoice.data)
+        self.assertIn(b"PKR 62.50", invoice.data)
+        self.assertIn(b"orders@example.com", self.client.get("/orders/1/confirmation").data)
+
+    def test_home_delivery_rejects_invalid_postal_code(self):
+        self.login()
+        self.client.post("/cart/add/1")
+        response = self.client.post(
+            "/checkout",
+            data={
+                "fulfillment_method": "delivery",
+                "delivery_address": "House 10, Main Street",
+                "delivery_city": "Lahore",
+                "postal_code": "5400",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"valid 5-digit Pakistan postal code", response.data)
+
     def test_prescription_is_required_and_can_be_verified_by_admin(self):
         connection = sqlite3.connect(self.database_file.name)
         connection.execute(

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmed - PharmaCare{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <section class="surface-panel text-center p-4 p-md-5">
+            <div class="brand-mark mx-auto mb-3" aria-hidden="true">+</div>
+            <p class="eyebrow mb-2">Thank you, your order is in</p>
+            <h1 class="mb-3">Order #{{ order.id }} confirmed</h1>
+            <p class="lead text-muted">Your order details are ready. We will use the email below for your confirmation record.</p>
+            <div class="summary-panel text-start my-4">
+                <div class="d-flex justify-content-between border-bottom pb-2 mb-2"><span>Confirmation email</span><strong>{{ order.contact_email }}</strong></div>
+                <div class="d-flex justify-content-between border-bottom pb-2 mb-2"><span>Fulfillment</span><strong>{{ order.pickup_location }}</strong></div>
+                {% if order.delivery_address %}<div class="d-flex justify-content-between border-bottom pb-2 mb-2"><span>Delivery address</span><strong class="text-end">{{ order.delivery_address }}, {{ order.delivery_city }} {{ order.postal_code }}</strong></div>{% endif %}
+                <div class="d-flex justify-content-between"><span>Total</span><strong>PKR {{ "%.2f"|format(order.total_amount) }}</strong></div>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+                <a class="btn btn-primary" href="{{ url_for('orders.order_detail', order_id=order.id) }}">View order</a>
+                <a class="btn btn-outline-secondary" href="{{ url_for('orders.invoice', order_id=order.id) }}">View invoice</a>
+                <a class="btn btn-light" href="{{ url_for('medicines.list_medicines') }}">Continue shopping</a>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

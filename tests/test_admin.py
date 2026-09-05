@@ -53,6 +53,15 @@ class AdminManagementTestCase(unittest.TestCase):
         response = self.client.get("/admin")
         self.assertEqual(response.status_code, 403)
 
+    def test_admin_navigation_is_management_and_tracking_only(self):
+        self.login("admin@example.com")
+        response = self.client.get("/admin")
+
+        self.assertIn(b"Inventory management", response.data)
+        self.assertIn(b"Order tracking", response.data)
+        self.assertNotIn(b">Cart<", response.data)
+        self.assertNotIn(b">Orders<", response.data)
+
     def test_admin_can_create_edit_and_delete_medicine(self):
         self.login("admin@example.com")
         create = self.client.post("/admin/medicines/new", data=self.medicine_data())

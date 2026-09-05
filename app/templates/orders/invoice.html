@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Invoice #{{ order.id }} - PharmaCare{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Invoice #{{ order.id }}</h1>
+    <button class="btn btn-outline-secondary" type="button" onclick="window.print()">Print invoice</button>
+</div>
+<p><strong>Date:</strong> {{ order.created_at }}</p>
+<p><strong>Fulfillment:</strong> {{ order.pickup_location }}</p>
+{% if order.delivery_address %}<p><strong>Delivery address:</strong> {{ order.delivery_address }}, {{ order.delivery_city }} {{ order.postal_code }}</p>{% endif %}
+<table class="table">
+    <thead><tr><th>Medicine</th><th>Quantity</th><th>Unit price</th><th>Subtotal</th></tr></thead>
+    <tbody>{% for item in items %}<tr><td>{{ item.name }}</td><td>{{ item.quantity }}</td><td>PKR {{ "%.2f"|format(item.unit_price) }}</td><td>PKR {{ "%.2f"|format(item.subtotal) }}</td></tr>{% endfor %}</tbody>
+</table>
+<p class="text-end">Medicine subtotal: PKR {{ "%.2f"|format(order.total_amount - (order.delivery_fee or 0)) }}</p>
+<p class="text-end">Home delivery fee: PKR {{ "%.2f"|format(order.delivery_fee or 0) }}</p>
+<p class="fs-5 text-end"><strong>Total: PKR {{ "%.2f"|format(order.total_amount) }}</strong></p>
+{% endblock %}

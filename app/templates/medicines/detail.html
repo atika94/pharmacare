@@ -16,7 +16,7 @@
         <p class="text-muted">{{ medicine.category or "General medicine" }}{% if medicine.manufacturer %} · {{ medicine.manufacturer }}{% endif %}</p>
         <p>{{ medicine.description or "No description available." }}</p>
         <dl class="row">
-            <dt class="col-sm-4">Price</dt><dd class="col-sm-8">${{ "%.2f"|format(medicine.price) }}</dd>
+            <dt class="col-sm-4">Price</dt><dd class="col-sm-8">PKR {{ "%.2f"|format(medicine.price) }}</dd>
             <dt class="col-sm-4">Stock</dt><dd class="col-sm-8">{{ medicine.stock_quantity }}</dd>
             <dt class="col-sm-4">Expiry</dt><dd class="col-sm-8">{{ medicine.expiry_date or "Not specified" }}</dd>
             <dt class="col-sm-4">Prescription</dt><dd class="col-sm-8">{{ "Required" if medicine.requires_prescription else "Not required" }}</dd>

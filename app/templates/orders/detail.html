@@ -7,17 +7,21 @@
     <h1>Order #{{ order.id }}</h1>
     <span class="badge text-bg-secondary">{{ order.status|capitalize }}</span>
 </div>
-<p><strong>Pickup location:</strong> {{ order.pickup_location }}</p>
+<p><strong>Fulfillment:</strong> {{ order.pickup_location }}</p>
+<p><strong>Confirmation email:</strong> {{ order.contact_email or "Not provided" }}</p>
+{% if order.delivery_address %}<p><strong>Delivery address:</strong> {{ order.delivery_address }}, {{ order.delivery_city }} {{ order.postal_code }}</p>{% endif %}
 <div class="table-responsive">
     <table class="table">
         <thead><tr><th>Medicine</th><th>Quantity</th><th>Unit price</th><th>Subtotal</th></tr></thead>
         <tbody>
         {% for item in items %}
-        <tr><td>{{ item.name }}</td><td>{{ item.quantity }}</td><td>${{ "%.2f"|format(item.unit_price) }}</td><td>${{ "%.2f"|format(item.subtotal) }}</td></tr>
+        <tr><td>{{ item.name }}</td><td>{{ item.quantity }}</td><td>PKR {{ "%.2f"|format(item.unit_price) }}</td><td>PKR {{ "%.2f"|format(item.subtotal) }}</td></tr>
         {% endfor %}
         </tbody>
     </table>
 </div>
-<p class="fs-5"><strong>Total: ${{ "%.2f"|format(order.total_amount) }}</strong></p>
+<p>Home delivery fee: PKR {{ "%.2f"|format(order.delivery_fee or 0) }}</p>
+<p class="fs-5"><strong>Total: PKR {{ "%.2f"|format(order.total_amount) }}</strong></p>
+<a class="btn btn-outline-primary" href="{{ url_for('orders.invoice', order_id=order.id) }}">View invoice</a>
 <a href="{{ url_for('orders.order_history') }}">Back to orders</a>
 {% endblock %}

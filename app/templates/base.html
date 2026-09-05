@@ -10,18 +10,27 @@
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         rel="stylesheet"
     >
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
 </head>
 
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<nav class="navbar navbar-expand-lg navbar-dark site-nav">
     <div class="container">
 
-        <a class="navbar-brand fw-bold" href="{{ url_for('home') }}">
-            PharmaCare
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{{ url_for('home') }}">
+            <span class="brand-mark">+</span> PharmaCare
         </a>
 
-        <div class="navbar-nav ms-auto">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-navigation" aria-controls="main-navigation" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="main-navigation">
+        <div class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
 
             {% if current_user.is_authenticated %}
 
@@ -30,27 +39,20 @@
                     Medicines
                 </a>
 
-                <a class="nav-link text-white"
-                   href="{{ url_for('orders.cart') }}">
-                    Cart
-                </a>
-
-                <a class="nav-link text-white"
-                   href="{{ url_for('orders.order_history') }}">
-                    Orders
-                </a>
-
-                    {% if current_user.is_admin() %}
+                {% if current_user.is_admin() %}
                     <a class="nav-link text-white"
                        href="{{ url_for('admin.dashboard') }}">
-                        Admin
+                        Inventory management
                     </a>
                     <a class="nav-link text-white"
                        href="{{ url_for('admin.orders') }}">
-                        Customer orders
+                        Order tracking
                     </a>
-                    {% endif %}
-                <span class="navbar-text text-white me-3">
+                {% else %}
+                    <a class="nav-link text-white" href="{{ url_for('orders.cart') }}">Cart</a>
+                    <a class="nav-link text-white" href="{{ url_for('orders.order_history') }}">Orders</a>
+                {% endif %}
+                <span class="navbar-text text-white me-lg-2">
                     Welcome, {{ current_user.name }}
                 </span>
 
@@ -84,12 +86,13 @@
             {% endif %}
 
         </div>
+        </div>
 
     </div>
 </nav>
 
 
-<div class="container mt-4">
+<main class="container page-shell">
 
     {% with messages = get_flashed_messages(with_categories=true) %}
 
@@ -111,7 +114,7 @@
     {% block content %}
     {% endblock %}
 
-</div>
+</main>
 
 
 <script

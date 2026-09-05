@@ -3,22 +3,45 @@
 {% block title %}Checkout - PharmaCare{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Checkout</h1>
+<div class="page-heading mb-4"><p class="eyebrow mb-1">Almost there</p><h1>Complete your order</h1><p class="text-muted mb-0">Confirm your contact details and delivery preference.</p></div>
 <form method="POST" enctype="multipart/form-data" class="row g-4">
     <div class="col-md-7">
-        <label class="form-label" for="pickup_location">Store pickup location</label>
-        <input class="form-control" id="pickup_location" name="pickup_location" required maxlength="200" placeholder="Main Street Pharmacy">
-        <div class="form-text">Your order will be prepared for pickup at this location.</div>
+        <div class="surface-panel mb-4">
+            <label class="form-label" for="contact_email">Email for order confirmation</label>
+            <input class="form-control" type="email" id="contact_email" name="contact_email" value="{{ contact_email or '' }}" required maxlength="255" autocomplete="email">
+            <div class="form-text">We will show this address on your order confirmation.</div>
+        </div>
+        <div class="surface-panel">
+        <fieldset>
+            <legend class="h5">Fulfillment method</legend>
+            <div class="form-check"><input class="form-check-input" type="radio" name="fulfillment_method" id="delivery" value="delivery" checked><label class="form-check-label" for="delivery">Home delivery (PKR 50)</label></div>
+            <div class="form-check"><input class="form-check-input" type="radio" name="fulfillment_method" id="pickup" value="pickup"><label class="form-check-label" for="pickup">Store pickup</label></div>
+        </fieldset>
+        <div class="mt-3">
+            <label class="form-label" for="delivery_address">Delivery address</label>
+            <textarea class="form-control" id="delivery_address" name="delivery_address" rows="2" minlength="10" maxlength="500" placeholder="House number, street, area"></textarea>
+        </div>
+        <div class="row mt-1">
+            <div class="col-sm-7"><label class="form-label" for="delivery_city">City</label><input class="form-control" id="delivery_city" name="delivery_city" maxlength="100"></div>
+            <div class="col-sm-5"><label class="form-label" for="postal_code">Postal code</label><input class="form-control" id="postal_code" name="postal_code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5"></div>
+        </div>
+        <div class="mt-3">
+            <label class="form-label" for="pickup_location">Store pickup location</label>
+            <input class="form-control" id="pickup_location" name="pickup_location" maxlength="200" placeholder="Main Street Pharmacy">
+        </div>
+        </div>
     </div>
     <div class="col-md-5">
-        <div class="border rounded p-3">
+        <div class="summary-panel">
             <h2 class="h5">Order summary</h2>
             {% for item in items %}
-            <div class="d-flex justify-content-between"><span>{{ item.medicine.name }} × {{ item.quantity }}</span><span>${{ "%.2f"|format(item.subtotal) }}</span></div>
+            <div class="d-flex justify-content-between"><span>{{ item.medicine.name }} × {{ item.quantity }}</span><span>PKR {{ "%.2f"|format(item.subtotal) }}</span></div>
             {% endfor %}
             <hr>
-            <div class="d-flex justify-content-between"><strong>Total</strong><strong>${{ "%.2f"|format(total) }}</strong></div>
-            <button class="btn btn-primary w-100 mt-3" type="submit">Place order</button>
+            <div class="d-flex justify-content-between"><span>Medicine subtotal</span><span>PKR {{ "%.2f"|format(subtotal) }}</span></div>
+            <div class="d-flex justify-content-between"><span>Home delivery</span><span>PKR {{ "%.2f"|format(delivery_fee) }}</span></div>
+            <div class="d-flex justify-content-between"><strong>Total</strong><strong>PKR {{ "%.2f"|format(total) }}</strong></div>
+            <button class="btn btn-primary w-100 mt-3" type="submit">Confirm order</button>
         </div>
     </div>
     {% if items|selectattr('medicine.requires_prescription')|list %}

@@ -177,6 +177,11 @@ def init_db():
                 user_id         INTEGER       NOT NULL,
                 total_amount    DECIMAL(10, 2) NOT NULL,
                 pickup_location VARCHAR(200)  NOT NULL,
+                delivery_address TEXT,
+                delivery_city   VARCHAR(100),
+                postal_code     VARCHAR(5),
+                delivery_fee    DECIMAL(10, 2) NOT NULL DEFAULT 0,
+                contact_email   VARCHAR(255),
                 status          VARCHAR(30)   NOT NULL DEFAULT 'pending',
                 prescription_filename VARCHAR(255),
                 prescription_verified BOOLEAN NOT NULL DEFAULT 0,
@@ -204,6 +209,16 @@ def init_db():
             cursor.execute("ALTER TABLE orders ADD COLUMN prescription_filename VARCHAR(255)")
         if "prescription_verified" not in order_columns:
             cursor.execute("ALTER TABLE orders ADD COLUMN prescription_verified BOOLEAN NOT NULL DEFAULT 0")
+        if "delivery_address" not in order_columns:
+            cursor.execute("ALTER TABLE orders ADD COLUMN delivery_address TEXT")
+        if "delivery_city" not in order_columns:
+            cursor.execute("ALTER TABLE orders ADD COLUMN delivery_city VARCHAR(100)")
+        if "postal_code" not in order_columns:
+            cursor.execute("ALTER TABLE orders ADD COLUMN postal_code VARCHAR(5)")
+        if "delivery_fee" not in order_columns:
+            cursor.execute("ALTER TABLE orders ADD COLUMN delivery_fee DECIMAL(10, 2) NOT NULL DEFAULT 0")
+        if "contact_email" not in order_columns:
+            cursor.execute("ALTER TABLE orders ADD COLUMN contact_email VARCHAR(255)")
 
         connection.commit()
         print("[Database] Tables initialised successfully.")
