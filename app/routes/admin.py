@@ -150,7 +150,9 @@ def update_order_status(order_id):
     order = fetch_one(
         """
         SELECT orders.id, orders.status, orders.contact_email,
-               users.email AS customer_email, users.name AS customer_name
+             orders.total_amount, orders.pickup_location, orders.delivery_address,
+             orders.delivery_city, orders.postal_code,
+             users.email AS customer_email, users.name AS customer_name
         FROM orders
         JOIN users ON users.id = orders.user_id
         WHERE orders.id = ?
@@ -167,8 +169,19 @@ def update_order_status(order_id):
         flash("That order status change is not allowed.", "warning")
         return redirect(url_for("admin.orders"))
 
+    order["items"] = fetch_all(
+        """
+        SELECT medicines.name, order_items.quantity,
+               order_items.quantity * order_items.unit_price AS subtotal
+        FROM order_items
+        JOIN medicines ON medicines.id = order_items.medicine_id
+        WHERE order_items.order_id = ?
+        """,
+        (order_id,),
+    )
     if execute_query("UPDATE orders SET status = ? WHERE id = ?", (requested_status, order_id)):
-        send_order_status_email(order, requested_status)
+        if not send_order_status_email(order, requested_status):
+            current_app.logger.warning("Order status email failed for order %s", order_id)
         flash(f"Order marked as {requested_status}.", "success")
     else:
         flash("Order status could not be updated.", "danger")

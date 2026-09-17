@@ -8,6 +8,7 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app.database.connection import get_connection, fetch_all, fetch_one
+from app.notifications import send_order_confirmation_email
 
 
 orders_bp = Blueprint("orders", __name__)
@@ -238,6 +239,26 @@ def checkout():
                 )
             connection.commit()
             session.pop("cart", None)
+            order = {
+                "id": order_id,
+                "contact_email": contact_email,
+                "customer_name": current_user.name,
+                "pickup_location": pickup_location,
+                "delivery_address": delivery_address,
+                "delivery_city": delivery_city,
+                "postal_code": postal_code,
+                "total_amount": total,
+                "items": [
+                    {
+                        "name": item["medicine"]["name"],
+                        "quantity": item["quantity"],
+                        "subtotal": item["subtotal"],
+                    }
+                    for item in items
+                ],
+            }
+            if not send_order_confirmation_email(order):
+                current_app.logger.warning("Order confirmation email failed for order %s", order_id)
             flash("Order placed successfully.", "success")
             return redirect(url_for("orders.order_confirmation", order_id=order_id))
         except Exception as error:

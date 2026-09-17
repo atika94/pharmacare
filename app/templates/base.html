@@ -128,6 +128,17 @@
 <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
 </script>
+<script>
+document.querySelectorAll('.toggle-password').forEach(function (button) {
+    button.addEventListener('click', function () {
+        const input = document.getElementById(button.dataset.target);
+        const visible = input.type === 'text';
+        input.type = visible ? 'password' : 'text';
+        button.textContent = visible ? 'Show' : 'Hide';
+        button.setAttribute('aria-label', visible ? 'Show password' : 'Hide password');
+    });
+});
+</script>
 
 </body>
 </html>
