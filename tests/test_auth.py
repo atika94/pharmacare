@@ -2,6 +2,7 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from app import create_app
 
@@ -20,15 +21,32 @@ class AuthenticationTestCase(unittest.TestCase):
         os.environ.pop("SQLITE_DB_PATH", None)
 
     def register(self, email="customer@example.com", password="TestPassword123"):
-        return self.client.post(
-            "/register",
-            data={
-                "name": "Test Customer",
-                "email": email,
-                "password": password,
-                "confirm_password": password,
-            },
-        )
+        with patch("app.routes.auth.send_registration_otp") as send_otp:
+            response = self.client.post(
+                "/register",
+                data={
+                    "name": "Test Customer",
+                    "email": email,
+                    "password": password,
+                    "confirm_password": password,
+                },
+            )
+            if response.status_code == 302 and response.location.endswith("/register/verify"):
+                otp = send_otp.call_args.args[1]
+                response = self.client.post("/register/verify", data={"otp": otp})
+        return response
+
+    def start_registration(self, email="customer@example.com", password="TestPassword123"):
+        with patch("app.routes.auth.send_registration_otp", return_value=True):
+            return self.client.post(
+                "/register",
+                data={
+                    "name": "Test Customer",
+                    "email": email,
+                    "password": password,
+                    "confirm_password": password,
+                },
+            )
 
     def test_registration_hashes_password_and_assigns_customer_role(self):
         response = self.register()
@@ -51,6 +69,56 @@ class AuthenticationTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Email already registered.", response.data)
+
+    def test_registration_rejects_invalid_email(self):
+        response = self.start_registration(email="not-an-email")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Please enter a valid email address.", response.data)
+
+    def test_registration_requires_email_verification(self):
+        response = self.start_registration()
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.location.endswith("/register/verify"))
+        connection = sqlite3.connect(self.database_file.name)
+        self.assertIsNotNone(
+            connection.execute(
+                "SELECT email FROM registration_otps WHERE email = ?",
+                ("customer@example.com",),
+            ).fetchone()
+        )
+        self.assertIsNone(
+            connection.execute(
+                "SELECT id FROM users WHERE email = ?",
+                ("customer@example.com",),
+            ).fetchone()
+        )
+        connection.close()
+
+    def test_registration_verification_completes_account(self):
+        with patch("app.routes.auth.send_registration_otp") as send_otp:
+            response = self.client.post(
+                "/register",
+                data={
+                    "name": "Test Customer",
+                    "email": "customer@example.com",
+                    "password": "TestPassword123",
+                    "confirm_password": "TestPassword123",
+                },
+            )
+            otp = send_otp.call_args.args[1]
+
+        response = self.client.post("/register/verify", data={"otp": otp})
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.location.endswith("/login"))
+
+        connection = sqlite3.connect(self.database_file.name)
+        self.assertIsNotNone(
+            connection.execute(
+                "SELECT id FROM users WHERE email = ?",
+                ("customer@example.com",),
+            ).fetchone()
+        )
+        connection.close()
 
     def test_invalid_login_uses_generic_message(self):
         self.register()
@@ -80,13 +148,55 @@ class AuthenticationTestCase(unittest.TestCase):
         self.assertIn(b"Login", response.data)
         self.assertIn(b"Register", response.data)
 
+    def test_customer_can_delete_account(self):
+        self.register()
+        self.client.post(
+            "/login",
+            data={"email": "customer@example.com", "password": "TestPassword123"},
+        )
+
+        response = self.client.post("/account/delete", follow_redirects=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Your account has been deleted.", response.data)
+        self.assertIn(b"Login", response.data)
+        connection = sqlite3.connect(self.database_file.name)
+        self.assertIsNone(
+            connection.execute(
+                "SELECT id FROM users WHERE email = ?",
+                ("customer@example.com",),
+            ).fetchone()
+        )
+        connection.close()
+
+    def test_admin_cannot_delete_account(self):
+        response = self.register(email="WWW.ADMIN@GMAIL.COM")
+        self.assertEqual(response.status_code, 302)
+        self.client.post(
+            "/login",
+            data={"email": "www.admin@gmail.com", "password": "TestPassword123"},
+        )
+
+        response = self.client.post("/account/delete", follow_redirects=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"The administrator account cannot be deleted here.", response.data)
+        connection = sqlite3.connect(self.database_file.name)
+        self.assertIsNotNone(
+            connection.execute(
+                "SELECT id FROM users WHERE email = ?",
+                ("www.admin@gmail.com",),
+            ).fetchone()
+        )
+        connection.close()
+
     def test_designated_admin_email_gets_admin_role(self):
-        response = self.register(email="WWW.ADMIN.COM")
+        response = self.register(email="WWW.ADMIN@GMAIL.COM")
         self.assertEqual(response.status_code, 302)
 
         connection = sqlite3.connect(self.database_file.name)
         role = connection.execute(
-            "SELECT role FROM users WHERE email = ?", ("www.admin.com",)
+            "SELECT role FROM users WHERE email = ?", ("www.admin@gmail.com",)
         ).fetchone()[0]
         connection.close()
 
@@ -94,7 +204,7 @@ class AuthenticationTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/login",
-            data={"email": "www.admin.com", "password": "TestPassword123"},
+            data={"email": "www.admin@gmail.com", "password": "TestPassword123"},
         )
         self.assertEqual(response.status_code, 302)
         self.assertIn("/admin", response.location)

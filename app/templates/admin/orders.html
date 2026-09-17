@@ -22,7 +22,15 @@
             <td>PKR {{ "%.2f"|format(order.total_amount) }}</td>
             <td>{% if order.prescription_filename %}<a href="{{ url_for('admin.prescription', order_id=order.id) }}">View</a>{% else %}Not required{% endif %}</td>
             <td><a href="{{ url_for('orders.order_detail', order_id=order.id) }}">View</a></td>
-            {% if order.status == "pending_verification" %}<td><form method="POST" action="{{ url_for('admin.verify_prescription', order_id=order.id) }}"><button class="btn btn-sm btn-success" type="submit">Verify</button></form></td>{% endif %}
+            <td class="text-nowrap">
+                {% if order.status == "pending_verification" %}
+                <form method="POST" action="{{ url_for('admin.verify_prescription', order_id=order.id) }}"><button class="btn btn-sm btn-success" type="submit">Verify</button></form>
+                {% elif order.status in ["pending", "verified"] %}
+                <form method="POST" action="{{ url_for('admin.update_order_status', order_id=order.id) }}"><input type="hidden" name="status" value="dispatched"><button class="btn btn-sm btn-primary" type="submit">Dispatch</button></form>
+                {% elif order.status == "dispatched" %}
+                <form method="POST" action="{{ url_for('admin.update_order_status', order_id=order.id) }}"><input type="hidden" name="status" value="delivered"><button class="btn btn-sm btn-success" type="submit">Delivered</button></form>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
         </tbody>

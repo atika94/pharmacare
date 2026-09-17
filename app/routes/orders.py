@@ -121,6 +121,8 @@ def add_to_cart(medicine_id):
         cart_data[str(medicine_id)] = current_quantity + 1
         session["cart"] = cart_data
         flash(f"{medicine['name']} added to your cart.", "success")
+    if request.form.get("next") == "checkout":
+        return redirect(url_for("orders.checkout"))
     return redirect(request.referrer or url_for("medicines.list_medicines"))
 
 

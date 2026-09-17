@@ -1,4 +1,22 @@
 # pharmacare
+
+## Email verification and order status emails
+
+Configure SMTP before running the application if customers should receive dispatch and delivery emails:
+
+```text
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=your-account
+SMTP_PASSWORD=your-password
+MAIL_FROM=PharmaCare <no-reply@example.com>
+SMTP_USE_TLS=true
+SMTP_USE_SSL=false
+```
+
+For Gmail, enable 2-Step Verification, create a Google App Password, and use that 16-character App Password as `SMTP_PASSWORD`. Use the same Gmail address for `SMTP_USERNAME` and `MAIL_FROM`; a normal Gmail account password will not work. SMTP is used to send registration verification codes and order status notifications.
+
+Admins can mark an order as dispatched and then delivered from the order tracking page. Each successful status change sends an email to the order's checkout email address.
 A full-stack pharmacy management and medicine ordering system built with Python, Flask, HTML, CSS, and JavaScript, featuring inventory management, customer accounts, shopping cart, online ordering, and store pickup.
 # Pharmacy Management System
 

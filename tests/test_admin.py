@@ -3,6 +3,7 @@ import sqlite3
 import tempfile
 import unittest
 from io import BytesIO
+from unittest.mock import patch
 
 from app import create_app
 from werkzeug.security import generate_password_hash
@@ -123,6 +124,38 @@ class AdminManagementTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"customer@example.com", response.data)
         self.assertIn(b"Main Street Pharmacy", response.data)
+
+    def test_admin_can_dispatch_and_deliver_order_with_notifications(self):
+        connection = sqlite3.connect(self.database_file.name)
+        connection.execute(
+            "INSERT INTO orders (user_id, total_amount, pickup_location, contact_email) VALUES (?, ?, ?, ?)",
+            (1, 19.98, "Main Street Pharmacy", "orders@example.com"),
+        )
+        connection.commit()
+        connection.close()
+
+        self.login("admin@example.com")
+        with patch("app.routes.admin.send_order_status_email") as send_email:
+            dispatched = self.client.post(
+                "/admin/orders/1/status", data={"status": "dispatched"}
+            )
+            delivered = self.client.post(
+                "/admin/orders/1/status", data={"status": "delivered"}
+            )
+
+        self.assertEqual(dispatched.status_code, 302)
+        self.assertEqual(delivered.status_code, 302)
+        self.assertEqual(
+            [call.args for call in send_email.call_args_list],
+            [
+                (unittest.mock.ANY, "dispatched"),
+                (unittest.mock.ANY, "delivered"),
+            ],
+        )
+        connection = sqlite3.connect(self.database_file.name)
+        status = connection.execute("SELECT status FROM orders WHERE id = 1").fetchone()[0]
+        connection.close()
+        self.assertEqual(status, "delivered")
 
     def test_admin_can_add_medicine_to_cart(self):
         self.login("admin@example.com")

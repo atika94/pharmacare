@@ -146,6 +146,18 @@ def init_db():
             )
         """)
 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS registration_otps (
+                email         VARCHAR(255) PRIMARY KEY,
+                name          VARCHAR(150) NOT NULL,
+                password      VARCHAR(255) NOT NULL,
+                role          VARCHAR(20) NOT NULL,
+                otp_hash      VARCHAR(255) NOT NULL,
+                expires_at    DATETIME NOT NULL,
+                created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         # ------------------------------------------------------------------
         # medicines table
         # ------------------------------------------------------------------

@@ -44,6 +44,12 @@ h1 { letter-spacing: -.04em; }
 .product-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
 .product-card .card-img-top { height: 185px; object-fit: cover; }
 .product-card .card-title { color: var(--ink); }
+.product-card-placeholder { height: 185px; display: grid; place-items: center; color: var(--teal-dark); background: var(--mint); font: 800 4rem/1 "Manrope", sans-serif; }
+.product-price { display: block; margin-top: .65rem; color: var(--teal-dark); font-size: 1.05rem; }
+.product-badge { flex: 0 0 auto; padding: .22rem .45rem; border-radius: 6px; color: var(--teal-dark); background: var(--mint); font-size: .68rem; font-weight: 800; letter-spacing: .06em; }
+.product-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+.product-stock { display: block; padding: .65rem 0; font-size: .9rem; font-weight: 700; }
+.product-stock--out { color: var(--coral); }
 .surface-panel, .summary-panel { padding: 1.35rem; }
 .summary-panel { position: sticky; top: 1.5rem; }
 .form-control, .form-select { border-color: var(--line); border-radius: 10px; padding: .72rem .85rem; }

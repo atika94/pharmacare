@@ -61,6 +61,14 @@
                     Logout
                 </a>
 
+                {% if not current_user.is_admin() %}
+                    <form method="POST" action="{{ url_for('auth.delete_account') }}" class="d-inline" onsubmit="return confirm('Delete your account and order history? This cannot be undone.');">
+                        <button type="submit" class="nav-link text-white border-0 bg-transparent">
+                            Delete account
+                        </button>
+                    </form>
+                {% endif %}
+
             {% else %}
 
                 <a class="nav-link text-white"

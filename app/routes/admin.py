@@ -8,6 +8,7 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app.database.connection import execute_query, fetch_all, fetch_one
+from app.notifications import send_order_status_email
 from app.routes.orders import expire_unverified_orders
 
 
@@ -136,6 +137,41 @@ def verify_prescription(order_id):
             (order_id,),
         ):
             flash("Prescription verified. Order approved.", "success")
+    return redirect(url_for("admin.orders"))
+
+
+@admin_bp.post("/orders/<int:order_id>/status")
+@admin_required
+def update_order_status(order_id):
+    requested_status = request.form.get("status", "").strip().lower()
+    if requested_status not in {"dispatched", "delivered"}:
+        abort(400)
+
+    order = fetch_one(
+        """
+        SELECT orders.id, orders.status, orders.contact_email,
+               users.email AS customer_email, users.name AS customer_name
+        FROM orders
+        JOIN users ON users.id = orders.user_id
+        WHERE orders.id = ?
+        """,
+        (order_id,),
+    )
+    if order is None:
+        abort(404)
+
+    valid_transition = (
+        requested_status == "dispatched" and order["status"] in {"pending", "verified"}
+    ) or (requested_status == "delivered" and order["status"] == "dispatched")
+    if not valid_transition:
+        flash("That order status change is not allowed.", "warning")
+        return redirect(url_for("admin.orders"))
+
+    if execute_query("UPDATE orders SET status = ? WHERE id = ?", (requested_status, order_id)):
+        send_order_status_email(order, requested_status)
+        flash(f"Order marked as {requested_status}.", "success")
+    else:
+        flash("Order status could not be updated.", "danger")
     return redirect(url_for("admin.orders"))
 
 
