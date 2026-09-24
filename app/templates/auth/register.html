@@ -60,7 +60,9 @@
                             class="form-control"
                             id="password"
                             name="password"
-                            minlength="6"
+                            minlength="8"
+                            pattern="(?=.*[A-Za-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}"
+                            title="Use at least 8 characters, including a letter, number, and symbol."
                             required
                         >
                         <button class="btn btn-outline-secondary toggle-password" type="button" data-target="password" aria-label="Show password">Show</button>
@@ -79,7 +81,7 @@
                             class="form-control"
                             id="confirm_password"
                             name="confirm_password"
-                            minlength="6"
+                            minlength="8"
                             required
                         >
                         <button class="btn btn-outline-secondary toggle-password" type="button" data-target="confirm_password" aria-label="Show password">Show</button>

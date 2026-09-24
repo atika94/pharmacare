@@ -71,6 +71,13 @@ class MedicineBrowsingTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"No medicines matched your search.", response.data)
 
+    def test_search_treats_sql_payload_as_plain_text(self):
+        response = self.client.get("/medicines", query_string={"q": "' OR 1=1 --"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"No medicines matched your search.", response.data)
+        self.assertIn(b"Paracetamol", self.client.get("/medicines").data)
+
 
 if __name__ == "__main__":
     unittest.main()

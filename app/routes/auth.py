@@ -14,6 +14,7 @@ from app.notifications import send_registration_otp
 auth_bp = Blueprint("auth", __name__)
 ADMIN_EMAIL = "www.admin@gmail.com"
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+PASSWORD_PATTERN = re.compile(r"^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$")
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
@@ -29,8 +30,8 @@ def register():
         if not EMAIL_PATTERN.fullmatch(email):
             flash("Please enter a valid email address.", "danger")
             return render_template("auth/register.html")
-        if len(password) < 6:
-            flash("Password must be at least 6 characters.", "danger")
+        if not PASSWORD_PATTERN.fullmatch(password):
+            flash("Password must be at least 8 characters and include a letter, number, and symbol.", "danger")
             return render_template("auth/register.html")
         if password != confirm_password:
             flash("Passwords do not match.", "danger")

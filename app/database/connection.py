@@ -22,6 +22,8 @@ def get_connection():
     try:
         connection = sqlite3.connect(_database_path())
         connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("PRAGMA busy_timeout = 5000")
         return connection
     except sqlite3.Error as e:
         print(f"[Database] Error opening SQLite database: {e}")

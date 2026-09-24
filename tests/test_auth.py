@@ -20,7 +20,7 @@ class AuthenticationTestCase(unittest.TestCase):
         os.unlink(self.database_file.name)
         os.environ.pop("SQLITE_DB_PATH", None)
 
-    def register(self, email="customer@example.com", password="TestPassword123"):
+    def register(self, email="customer@example.com", password="TestPassword123!"):
         with patch("app.routes.auth.send_registration_otp") as send_otp:
             response = self.client.post(
                 "/register",
@@ -36,7 +36,7 @@ class AuthenticationTestCase(unittest.TestCase):
                 response = self.client.post("/register/verify", data={"otp": otp})
         return response
 
-    def start_registration(self, email="customer@example.com", password="TestPassword123"):
+    def start_registration(self, email="customer@example.com", password="TestPassword123!"):
         with patch("app.routes.auth.send_registration_otp", return_value=True):
             return self.client.post(
                 "/register",
@@ -75,6 +75,19 @@ class AuthenticationTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Please enter a valid email address.", response.data)
 
+    def test_registration_rejects_weak_passwords(self):
+        for password in ("short", "allletters", "NoSymbol123", "NoNumber!", "12345678!"):
+            with self.subTest(password=password):
+                response = self.start_registration(password=password)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(b"Password must be at least 8 characters", response.data)
+
+    def test_registration_accepts_required_password_character_types(self):
+        response = self.start_registration(password="ValidPass123!")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.location.endswith("/register/verify"))
+
     def test_registration_requires_email_verification(self):
         response = self.start_registration()
         self.assertEqual(response.status_code, 302)
@@ -101,8 +114,8 @@ class AuthenticationTestCase(unittest.TestCase):
                 data={
                     "name": "Test Customer",
                     "email": "customer@example.com",
-                    "password": "TestPassword123",
-                    "confirm_password": "TestPassword123",
+                    "password": "TestPassword123!",
+                    "confirm_password": "TestPassword123!",
                 },
             )
             otp = send_otp.call_args.args[1]
@@ -134,7 +147,7 @@ class AuthenticationTestCase(unittest.TestCase):
         self.register()
         response = self.client.post(
             "/login",
-            data={"email": "CUSTOMER@EXAMPLE.COM", "password": "TestPassword123"},
+            data={"email": "CUSTOMER@EXAMPLE.COM", "password": "TestPassword123!"},
             follow_redirects=True,
         )
 
@@ -152,7 +165,7 @@ class AuthenticationTestCase(unittest.TestCase):
         self.register()
         self.client.post(
             "/login",
-            data={"email": "customer@example.com", "password": "TestPassword123"},
+            data={"email": "customer@example.com", "password": "TestPassword123!"},
         )
 
         response = self.client.post("/account/delete", follow_redirects=True)
@@ -174,7 +187,7 @@ class AuthenticationTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         self.client.post(
             "/login",
-            data={"email": "www.admin@gmail.com", "password": "TestPassword123"},
+            data={"email": "www.admin@gmail.com", "password": "TestPassword123!"},
         )
 
         response = self.client.post("/account/delete", follow_redirects=True)
@@ -204,7 +217,7 @@ class AuthenticationTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/login",
-            data={"email": "www.admin@gmail.com", "password": "TestPassword123"},
+            data={"email": "www.admin@gmail.com", "password": "TestPassword123!"},
         )
         self.assertEqual(response.status_code, 302)
         self.assertIn("/admin", response.location)
