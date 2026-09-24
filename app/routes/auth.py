@@ -10,7 +10,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.database.connection import get_connection
 from app.models.user import User
-from app.notifications import send_registration_otp
+from app.notifications import send_password_reset_otp, send_registration_otp
 auth_bp = Blueprint("auth", __name__)
 ADMIN_EMAIL = "www.admin@gmail.com"
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -158,6 +158,97 @@ def login():
             cursor.close()
             connection.close()
     return render_template("auth/login.html")
+
+
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        if not EMAIL_PATTERN.fullmatch(email):
+            flash("Please enter a valid email address.", "danger")
+            return render_template("auth/forgot_password.html")
+
+        connection = get_connection()
+        user = connection.execute("SELECT email FROM users WHERE email = ?", (email,)).fetchone()
+        if user is not None:
+            otp = f"{secrets.randbelow(10000):04d}"
+            expires_at = datetime.utcnow() + timedelta(minutes=10)
+            connection.execute(
+                """
+                INSERT INTO password_reset_otps (email, otp_hash, expires_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(email) DO UPDATE SET
+                    otp_hash = excluded.otp_hash,
+                    expires_at = excluded.expires_at
+                """,
+                (email, generate_password_hash(otp), expires_at.strftime("%Y-%m-%d %H:%M:%S")),
+            )
+            connection.commit()
+            if not send_password_reset_otp(email, otp):
+                connection.close()
+                flash("We could not send the verification email. Please try again.", "danger")
+                return render_template("auth/forgot_password.html")
+            session["password_reset_email"] = email
+        connection.close()
+        flash("If an account exists for that email, a verification code was sent.", "success")
+        return redirect(url_for("auth.verify_password_reset"))
+    return render_template("auth/forgot_password.html")
+
+
+@auth_bp.route("/forgot-password/verify", methods=["GET", "POST"])
+def verify_password_reset():
+    email = session.get("password_reset_email", "")
+    if not email:
+        flash("Start the password reset process first.", "warning")
+        return redirect(url_for("auth.forgot_password"))
+    if request.method == "POST":
+        otp = request.form.get("otp", "").strip()
+        connection = get_connection()
+        pending = connection.execute(
+            "SELECT * FROM password_reset_otps WHERE email = ?", (email,)
+        ).fetchone()
+        connection.close()
+        if pending is None:
+            flash("This verification request has expired. Start again.", "danger")
+            return redirect(url_for("auth.forgot_password"))
+        expired = datetime.utcnow() > datetime.strptime(pending["expires_at"], "%Y-%m-%d %H:%M:%S")
+        valid = len(otp) == 4 and otp.isdigit() and check_password_hash(pending["otp_hash"], otp)
+        if expired or not valid:
+            flash("Invalid or expired verification code.", "danger")
+            return render_template("auth/password_reset_verify.html", email=email)
+        session["password_reset_verified"] = True
+        return redirect(url_for("auth.reset_password"))
+    return render_template("auth/password_reset_verify.html", email=email)
+
+
+@auth_bp.route("/reset-password", methods=["GET", "POST"])
+def reset_password():
+    email = session.get("password_reset_email", "")
+    if not email or not session.get("password_reset_verified"):
+        flash("Verify your email before choosing a new password.", "warning")
+        return redirect(url_for("auth.forgot_password"))
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+        if not PASSWORD_PATTERN.fullmatch(password):
+            flash("Password must be at least 8 characters and include a letter, number, and symbol.", "danger")
+            return render_template("auth/reset_password.html")
+        if password != confirm_password:
+            flash("Passwords do not match.", "danger")
+            return render_template("auth/reset_password.html")
+        connection = get_connection()
+        connection.execute(
+            "UPDATE users SET password = ? WHERE email = ?",
+            (generate_password_hash(password), email),
+        )
+        connection.execute("DELETE FROM password_reset_otps WHERE email = ?", (email,))
+        connection.commit()
+        connection.close()
+        session.pop("password_reset_email", None)
+        session.pop("password_reset_verified", None)
+        flash("Your password has been changed. You can now log in.", "success")
+        return redirect(url_for("auth.login"))
+    return render_template("auth/reset_password.html")
 
 
 @auth_bp.route("/logout")

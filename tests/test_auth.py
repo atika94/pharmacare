@@ -161,6 +161,38 @@ class AuthenticationTestCase(unittest.TestCase):
         self.assertIn(b"Login", response.data)
         self.assertIn(b"Register", response.data)
 
+    def test_password_reset_requires_email_verification(self):
+        self.register()
+        with patch("app.routes.auth.send_password_reset_otp") as send_otp:
+            response = self.client.post(
+                "/forgot-password",
+                data={"email": "customer@example.com"},
+            )
+            self.assertEqual(response.status_code, 302)
+            otp = send_otp.call_args.args[1]
+
+        response = self.client.post(
+            "/reset-password",
+            data={"password": "NewPassword123!", "confirm_password": "NewPassword123!"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.location.endswith("/forgot-password"))
+
+        response = self.client.post("/forgot-password/verify", data={"otp": otp})
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.location.endswith("/reset-password"))
+
+        response = self.client.post(
+            "/reset-password",
+            data={"password": "NewPassword123!", "confirm_password": "NewPassword123!"},
+        )
+        self.assertEqual(response.status_code, 302)
+        response = self.client.post(
+            "/login",
+            data={"email": "customer@example.com", "password": "NewPassword123!"},
+        )
+        self.assertEqual(response.status_code, 302)
+
     def test_customer_can_delete_account(self):
         self.register()
         self.client.post(

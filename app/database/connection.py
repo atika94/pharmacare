@@ -160,6 +160,15 @@ def init_db():
             )
         """)
 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS password_reset_otps (
+                email         VARCHAR(255) PRIMARY KEY,
+                otp_hash      VARCHAR(255) NOT NULL,
+                expires_at    DATETIME      NOT NULL,
+                created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         # ------------------------------------------------------------------
         # medicines table
         # ------------------------------------------------------------------

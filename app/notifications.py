@@ -74,3 +74,12 @@ def send_registration_otp(email, otp):
         f"Your PharmaCare verification code is: {otp}\n\n"
         "This code expires in 10 minutes. If you did not request this, ignore this email.",
     )
+
+
+def send_password_reset_otp(email, otp):
+    return send_email(
+        email,
+        "Your PharmaCare password reset code",
+        f"Your PharmaCare password reset code is: {otp}\n\n"
+        "This code expires in 10 minutes. If you did not request this, ignore this email.",
+    )
