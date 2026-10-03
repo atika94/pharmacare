@@ -225,6 +225,20 @@ def init_db():
             )
         """)
 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS reviews (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id     INTEGER NOT NULL,
+                medicine_id INTEGER NOT NULL,
+                rating      INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+                comment     TEXT,
+                created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (user_id, medicine_id),
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                FOREIGN KEY (medicine_id) REFERENCES medicines (id) ON DELETE CASCADE
+            )
+        """)
+
         order_columns = {
             row[1] for row in cursor.execute("PRAGMA table_info(orders)").fetchall()
         }

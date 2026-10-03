@@ -58,6 +58,18 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (medicine_id) REFERENCES medicines (id)
 );
 
+CREATE TABLE IF NOT EXISTS reviews (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL,
+    medicine_id INTEGER NOT NULL,
+    rating      INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment     TEXT,
+    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, medicine_id),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (medicine_id) REFERENCES medicines (id) ON DELETE CASCADE
+);
+
 -- 4. Insert one sample medicine for testing
 INSERT INTO medicines (name, category, manufacturer, price, stock_quantity, expiry_date, description, requires_prescription)
 VALUES (

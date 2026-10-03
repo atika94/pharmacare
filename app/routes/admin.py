@@ -104,6 +104,45 @@ def dashboard():
     )
 
 
+@admin_bp.route("/analytics")
+@admin_required
+def analytics():
+    sales_summary = fetch_one(
+        """
+        SELECT COUNT(*) AS order_count,
+               COALESCE(SUM(total_amount), 0) AS revenue,
+               COALESCE((
+                   SELECT SUM(order_items.quantity)
+                   FROM order_items
+                   JOIN orders AS item_orders ON item_orders.id = order_items.order_id
+                   WHERE item_orders.status != 'cancelled'
+               ), 0) AS units_sold
+        FROM orders
+        WHERE orders.status != 'cancelled'
+        """
+    )
+    review_summary = fetch_one(
+        "SELECT COUNT(*) AS review_count, COALESCE(AVG(rating), 0) AS average_rating FROM reviews"
+    )
+    daily_sales = fetch_all(
+        """
+        SELECT date(orders.created_at) AS sale_date,
+               COALESCE(SUM(orders.total_amount), 0) AS revenue,
+               COUNT(DISTINCT orders.id) AS order_count
+        FROM orders
+        WHERE orders.status != 'cancelled'
+        GROUP BY date(orders.created_at)
+        ORDER BY sale_date
+        """
+    )
+    return render_template(
+        "admin/analytics.html",
+        sales_summary=sales_summary,
+        review_summary=review_summary,
+        daily_sales=daily_sales,
+    )
+
+
 @admin_bp.route("/orders")
 @admin_required
 def orders():

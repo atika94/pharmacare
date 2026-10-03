@@ -32,4 +32,33 @@
         {% endif %}
     </div>
 </div>
+
+<section class="mt-5">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2>Customer reviews</h2>
+        <span class="text-muted">{{ "%.1f"|format(average_rating) }}/5 ({{ reviews|length }} review{% if reviews|length != 1 %}s{% endif %})</span>
+    </div>
+    {% if current_user.is_authenticated and not current_user.is_admin() %}
+    <form method="POST" action="{{ url_for('medicines.add_review', medicine_id=medicine.id) }}" class="card card-body mt-3">
+        <label class="form-label" for="rating">Your rating</label>
+        <select class="form-select mb-2" id="rating" name="rating" required>
+            <option value="">Choose stars</option>
+            {% for value in range(5, 0, -1) %}<option value="{{ value }}" {% if existing_review and existing_review.rating == value %}selected{% endif %}>{{ value }} star{% if value != 1 %}s{% endif %}</option>{% endfor %}
+        </select>
+        <label class="form-label" for="comment">Comment</label>
+        <textarea class="form-control mb-2" id="comment" name="comment" maxlength="1000" rows="3">{{ existing_review.comment if existing_review else "" }}</textarea>
+        <button class="btn btn-outline-primary align-self-start" type="submit">Submit review</button>
+    </form>
+    {% endif %}
+    {% for review in reviews %}
+    <article class="border-bottom py-3">
+        <strong>{{ review.customer_name }}</strong>
+        <span class="text-warning ms-2">{{ "★" * review.rating }}{{ "☆" * (5 - review.rating) }}</span>
+        <small class="text-muted ms-2">{{ review.created_at }}</small>
+        {% if review.comment %}<p class="mb-0 mt-1">{{ review.comment }}</p>{% endif %}
+    </article>
+    {% else %}
+    <p class="text-muted mt-3">No reviews yet.</p>
+    {% endfor %}
+</section>
 {% endblock %}

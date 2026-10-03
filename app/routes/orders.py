@@ -78,13 +78,24 @@ def _cart_items():
 
     items = []
     total = 0
+    cart_changed = False
     for medicine in medicines:
         quantity = max(0, int(cart.get(str(medicine["id"]), 0)))
+        available_quantity = medicine["stock_quantity"]
+        if quantity > available_quantity:
+            quantity = available_quantity
+            if quantity:
+                cart[str(medicine["id"])] = quantity
+            else:
+                cart.pop(str(medicine["id"]), None)
+            cart_changed = True
         if quantity == 0:
             continue
         subtotal = float(medicine["price"]) * quantity
         items.append({"medicine": medicine, "quantity": quantity, "subtotal": subtotal})
         total += subtotal
+    if cart_changed:
+        session["cart"] = cart
     return items, total
 
 
@@ -141,7 +152,14 @@ def update_cart():
         if quantity <= 0:
             cart_data.pop(medicine_id, None)
         else:
-            cart_data[medicine_id] = quantity
+            medicine = fetch_one(
+                "SELECT stock_quantity FROM medicines WHERE id = ?",
+                (int(medicine_id),),
+            )
+            if medicine is None:
+                cart_data.pop(medicine_id, None)
+                continue
+            cart_data[medicine_id] = min(quantity, medicine["stock_quantity"])
     session["cart"] = cart_data
     flash("Cart updated.", "success")
     return redirect(url_for("orders.cart"))
@@ -234,9 +252,17 @@ def checkout():
                     (order_id, medicine_id, item["quantity"], item["medicine"]["price"]),
                 )
                 cursor.execute(
-                    "UPDATE medicines SET stock_quantity = stock_quantity - ? WHERE id = ?",
-                    (item["quantity"], medicine_id),
+                    """
+                    UPDATE medicines
+                    SET stock_quantity = stock_quantity - ?
+                    WHERE id = ? AND stock_quantity >= ?
+                    """,
+                    (item["quantity"], medicine_id, item["quantity"]),
                 )
+                if cursor.rowcount != 1:
+                    connection.rollback()
+                    flash(f"Not enough stock for {item['medicine']['name']}.", "danger")
+                    return redirect(url_for("orders.cart"))
             connection.commit()
             session.pop("cart", None)
             order = {

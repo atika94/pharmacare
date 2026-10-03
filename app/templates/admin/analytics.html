@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - PharmaCare{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>Sales & customer satisfaction</h1>
+        <p class="text-muted mb-0">Track revenue, orders, units sold, and review sentiment.</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin.dashboard') }}">Inventory</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="text-muted">Revenue</div><div class="fs-3">PKR {{ "%.2f"|format(sales_summary.revenue) }}</div></div></div></div>
+    <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="text-muted">Orders</div><div class="fs-3">{{ sales_summary.order_count }}</div></div></div></div>
+    <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="text-muted">Units sold</div><div class="fs-3">{{ sales_summary.units_sold }}</div></div></div></div>
+    <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="text-muted">Average rating</div><div class="fs-3">{{ "%.1f"|format(review_summary.average_rating) }}/5</div><small class="text-muted">{{ review_summary.review_count }} reviews</small></div></div></div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h2 class="h5">Daily sales progress</h2>
+        {% if daily_sales %}
+        <canvas id="sales-chart" height="100" aria-label="Daily sales chart"></canvas>
+        {% else %}
+        <p class="text-muted mb-0">Sales data will appear here after the first order.</p>
+        {% endif %}
+    </div>
+</div>
+{% if daily_sales %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById("sales-chart"), {
+    type: "line",
+    data: {
+        labels: {{ daily_sales|map(attribute="sale_date")|list|tojson }},
+        datasets: [{
+            label: "Revenue (PKR)",
+            data: {{ daily_sales|map(attribute="revenue")|list|tojson }},
+            borderColor: "#0d6efd",
+            backgroundColor: "rgba(13, 110, 253, .12)",
+            fill: true,
+            tension: .25
+        }]
+    },
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+});
+</script>
+{% endif %}
+{% endblock %}

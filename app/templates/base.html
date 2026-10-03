@@ -48,6 +48,10 @@
                        href="{{ url_for('admin.orders') }}">
                         Order tracking
                     </a>
+                    <a class="nav-link text-white"
+                       href="{{ url_for('admin.analytics') }}">
+                        Analytics
+                    </a>
                 {% else %}
                     <a class="nav-link text-white" href="{{ url_for('orders.cart') }}">Cart</a>
                     <a class="nav-link text-white" href="{{ url_for('orders.order_history') }}">Orders</a>
