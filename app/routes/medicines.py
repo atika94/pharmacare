@@ -60,17 +60,30 @@ def medicine_detail(medicine_id):
         sum(review["rating"] for review in reviews) / len(reviews) if reviews else 0
     )
     existing_review = None
+    can_review = False
     if current_user.is_authenticated:
         existing_review = fetch_one(
             "SELECT rating, comment FROM reviews WHERE medicine_id = ? AND user_id = ?",
             (medicine_id, current_user.id),
         )
+        can_review = fetch_one(
+            """
+            SELECT order_items.id
+            FROM order_items
+            JOIN orders ON orders.id = order_items.order_id
+            WHERE order_items.medicine_id = ? AND orders.user_id = ?
+              AND orders.status = 'delivered'
+            LIMIT 1
+            """,
+            (medicine_id, current_user.id),
+        ) is not None
     return render_template(
         "medicines/detail.html",
         medicine=Medicine(**medicine_data),
         reviews=reviews,
         average_rating=average_rating,
         existing_review=existing_review,
+        can_review=can_review,
     )
 
 

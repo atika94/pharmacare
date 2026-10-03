@@ -2,7 +2,7 @@ import os
 import smtplib
 from email.message import EmailMessage
 
-from flask import current_app
+from flask import current_app, url_for
 
 def send_email(recipient, subject, body):
     if not recipient:
@@ -53,6 +53,24 @@ def send_order_status_email(order, status):
             f"- {item['name']} x {item['quantity']} (PKR {float(item['subtotal']):.2f})"
             for item in order["items"]
         ) + "\n"
+    review_invitation = ""
+    if status == "delivered" and order.get("items"):
+        review_lines = []
+        for item in order["items"]:
+            if item.get("medicine_id"):
+                review_url = url_for(
+                    "medicines.medicine_detail",
+                    medicine_id=item["medicine_id"],
+                    _external=True,
+                )
+                review_lines.append(f"- {item['name']}: {review_url}")
+        if review_lines:
+            review_invitation = (
+                "\nWe would love to hear about your shopping experience. "
+                "Please rate and review your medicines:\n"
+                + "\n".join(review_lines)
+                + "\n"
+            )
     return send_email(
         order.get("contact_email") or order.get("customer_email"),
         f"PharmaCare order #{order['id']} {status_label.lower()}",
@@ -60,7 +78,8 @@ def send_order_status_email(order, status):
         f"Your PharmaCare order #{order['id']} has been {status_label.lower()}.\n\n"
         f"Fulfillment: {order.get('pickup_location', 'Not specified')}\n"
         f"Total: PKR {float(order.get('total_amount', 0)):.2f}\n"
-        f"{delivery}{items}\nThank you for shopping with PharmaCare.",
+        f"{delivery}{items}{review_invitation}\n"
+        "Thank you for shopping with PharmaCare!",
     )
 
 

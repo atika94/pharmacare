@@ -211,6 +211,7 @@ def update_order_status(order_id):
     order["items"] = fetch_all(
         """
         SELECT medicines.name, order_items.quantity,
+               medicines.id AS medicine_id,
                order_items.quantity * order_items.unit_price AS subtotal
         FROM order_items
         JOIN medicines ON medicines.id = order_items.medicine_id
