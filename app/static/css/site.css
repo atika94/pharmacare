@@ -42,7 +42,21 @@ h1 { letter-spacing: -.04em; }
 .product-card, .surface-panel, .summary-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 8px 25px rgba(28, 67, 57, .05); }
 .product-card { overflow: hidden; transition: transform .2s ease, box-shadow .2s ease; }
 .product-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
-.product-card .card-img-top { height: 185px; object-fit: cover; }
+.product-card .card-img-top {
+    width: 100%;
+    height: 185px;
+    padding: .75rem;
+    object-fit: contain;
+    object-position: center;
+    background: var(--surface);
+}
+.medicine-detail-image {
+    width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    object-position: center;
+    background: var(--surface);
+}
 .product-card .card-title { color: var(--ink); }
 .product-card-placeholder { height: 185px; display: grid; place-items: center; color: var(--teal-dark); background: var(--mint); font: 800 4rem/1 "Manrope", sans-serif; }
 .product-price { display: block; margin-top: .65rem; color: var(--teal-dark); font-size: 1.05rem; }

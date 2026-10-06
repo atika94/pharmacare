@@ -6,7 +6,7 @@
 <div class="row g-4">
     <div class="col-md-5">
         {% if medicine.image_filename %}
-        <img class="img-fluid rounded" src="{{ url_for('static', filename='images/medicines/' ~ medicine.image_filename) }}" alt="{{ medicine.name }}">
+        <img class="img-fluid rounded medicine-detail-image" src="{{ url_for('static', filename='images/medicines/' ~ medicine.image_filename) }}" alt="{{ medicine.name }}">
         {% else %}
         <div class="bg-light rounded d-flex align-items-center justify-content-center" style="min-height: 280px;">No image available</div>
         {% endif %}

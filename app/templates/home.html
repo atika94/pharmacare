@@ -23,7 +23,7 @@
     <div class="col-md-6 col-xl-4">
         <article class="product-card h-100">
             {% if medicine.image_filename %}
-            <img class="card-img-top" src="{{ url_for('static', filename='images/medicines/' ~ medicine.image_filename) }}" alt="{{ medicine.name }}" style="height: 180px; object-fit: cover;">
+            <img class="card-img-top" src="{{ url_for('static', filename='images/medicines/' ~ medicine.image_filename) }}" alt="{{ medicine.name }}">
             {% endif %}
             <div class="card-body p-4">
                 <h3 class="h5 card-title">{{ medicine.name }}</h3>
