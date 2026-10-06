@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from functools import wraps
 import os
 import uuid
@@ -124,22 +124,54 @@ def analytics():
     review_summary = fetch_one(
         "SELECT COUNT(*) AS review_count, COALESCE(AVG(rating), 0) AS average_rating FROM reviews"
     )
-    daily_sales = fetch_all(
+    selected_month = request.args.get("month", "").strip()
+    try:
+        month_start = date.fromisoformat(f"{selected_month}-01")
+    except ValueError:
+        month_start = date.today().replace(day=1)
+        selected_month = month_start.strftime("%Y-%m")
+
+    if month_start.month == 12:
+        next_month = date(month_start.year + 1, 1, 1)
+    else:
+        next_month = date(month_start.year, month_start.month + 1, 1)
+
+    daily_sales_rows = fetch_all(
         """
         SELECT date(orders.created_at) AS sale_date,
                COALESCE(SUM(orders.total_amount), 0) AS revenue,
                COUNT(DISTINCT orders.id) AS order_count
         FROM orders
         WHERE orders.status != 'cancelled'
+          AND date(orders.created_at) >= ?
+          AND date(orders.created_at) < ?
         GROUP BY date(orders.created_at)
         ORDER BY sale_date
-        """
+        """,
+        (month_start.isoformat(), next_month.isoformat()),
     )
+    sales_by_date = {row["sale_date"]: row for row in daily_sales_rows}
+    daily_sales = []
+    current_day = month_start
+    while current_day < next_month:
+        day_key = current_day.isoformat()
+        sale = sales_by_date.get(day_key)
+        daily_sales.append(
+            {
+                "sale_date": day_key,
+                "revenue": sale["revenue"] if sale else 0,
+                "order_count": sale["order_count"] if sale else 0,
+            }
+        )
+        current_day += timedelta(days=1)
+
     return render_template(
         "admin/analytics.html",
         sales_summary=sales_summary,
         review_summary=review_summary,
         daily_sales=daily_sales,
+        selected_month=selected_month,
+        selected_month_label=month_start.strftime("%B %Y"),
     )
 
 

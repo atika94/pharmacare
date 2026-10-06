@@ -125,6 +125,30 @@ class AdminManagementTestCase(unittest.TestCase):
         self.assertIn(b"customer@example.com", response.data)
         self.assertIn(b"Main Street Pharmacy", response.data)
 
+    def test_admin_can_view_daily_sales_for_selected_month(self):
+        connection = sqlite3.connect(self.database_file.name)
+        connection.executemany(
+            """
+            INSERT INTO orders (user_id, total_amount, pickup_location, created_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            [
+                (1, 19.98, "Main Street Pharmacy", "2026-05-03 10:00:00"),
+                (1, 29.98, "Main Street Pharmacy", "2026-06-03 10:00:00"),
+            ],
+        )
+        connection.commit()
+        connection.close()
+
+        self.login("admin@example.com")
+        response = self.client.get("/admin/analytics?month=2026-05")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'"2026-05-01"', response.data)
+        self.assertIn(b'"2026-05-31"', response.data)
+        self.assertIn(b'"2026-05-03"', response.data)
+        self.assertNotIn(b'"2026-06-03"', response.data)
+
     def test_admin_can_dispatch_and_deliver_order_with_notifications(self):
         connection = sqlite3.connect(self.database_file.name)
         connection.execute(
